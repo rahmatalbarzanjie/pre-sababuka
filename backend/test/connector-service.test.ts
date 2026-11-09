@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import type { QueryResult } from "pg";
 import type { Database, QueryResultRow } from "../src/database.js";
 import { readFileSync } from "node:fs";
-import { buildBpsDomainUrl, CONNECTOR_YEAR_MAX, CONNECTOR_YEAR_MIN, ConnectorService, extractBpsDomains, parseCsv } from "../src/services/connector-service.js";
+import { bpsApiBase, BPS_WEBAPI_BASE, buildBpsDomainUrl, CONNECTOR_YEAR_MAX, CONNECTOR_YEAR_MIN, ConnectorService, extractBpsDomains, parseCsv } from "../src/services/connector-service.js";
 import { testConfig } from "./test-config.js";
 
 function result<R extends QueryResultRow>(rows: R[]): QueryResult<R> {
@@ -190,4 +190,35 @@ test("impor melewati nilai yang sudah tercatat identik dan tidak membuat batch k
   await new ConnectorService(fakeDb, testConfig).importRun({ user: { id: "u1" } } as never, "r1", { actorId: "u1", requestId: "r", ipAddress: null, userAgent: null });
   assert.ok(!statements.some((sql) => sql.includes("INSERT INTO sababuka.data_batches")));
   assert.ok(!statements.some((sql) => sql.includes("INSERT INTO sababuka.observations")));
+});
+
+test("alamat dasar BPS memakai WebAPI resmi bila base_url tertimpa alamat halaman publikasi", () => {
+  assert.equal(bpsApiBase("https://webapi.bps.go.id/v1/api/"), "https://webapi.bps.go.id/v1/api");
+  assert.equal(bpsApiBase("https://kapuaskab.bps.go.id/id/publication/2026/02/27/x/kabupaten-kapuas-dalam-angka-2026.html"), BPS_WEBAPI_BASE);
+  assert.equal(bpsApiBase(null), BPS_WEBAPI_BASE);
+  assert.equal(bpsApiBase("bukan url"), BPS_WEBAPI_BASE);
+  assert.ok(buildBpsDomainUrl(bpsApiBase("https://kapuaskab.bps.go.id/halaman.html"), "KUNCI").startsWith("https://webapi.bps.go.id/v1/api/domain?"));
+});
+
+test("simpan profil integrasi memberi tipe eksplisit pada $7/$8 dan menggabung connection_config", async () => {
+  const statements: string[] = [];
+  const fakeClient = {
+    query: async <R extends QueryResultRow>(sql: string) => { statements.push(sql); return result<R>([{ source_id: "s1", id: "p1" }] as unknown as R[]); },
+    release: () => undefined,
+  };
+  const fakeDb: Database = {
+    query: async <R extends QueryResultRow>(sql: string) => { statements.push(sql); return result<R>([{ id: "p1" }] as unknown as R[]); },
+    connect: async () => fakeClient as never,
+    end: async () => undefined,
+  };
+  const input = { organization_id: "o1", code: "BPS_KAPUAS", name: "BPS WebAPI", connector_kind: "bps", base_url: "https://webapi.bps.go.id/v1/api", auth_type: "api_key", data_format: "json", sync_mode: "manual", verification_mode: "preview_required" } as never;
+  const audit = { actorId: "u1", requestId: "r1", ipAddress: null, userAgent: null };
+  const service = new ConnectorService(fakeDb, testConfig);
+  await service.saveIntegrationProfile({ user: { id: "u1" } } as never, input, audit, "p1");
+  await service.saveIntegrationProfile({ user: { id: "u1" } } as never, input, audit);
+  const update = statements.find((sql) => sql.includes("UPDATE sababuka.data_source_integrations"));
+  const insert = statements.find((sql) => sql.includes("INSERT INTO sababuka.data_source_integrations"));
+  assert.ok(update?.includes("$7::text") && update.includes("$8::int") && update.includes("CASE WHEN $7::text='scheduled'"));
+  assert.ok(insert?.includes("$7::text,$8::int") && insert.includes("CASE WHEN $7::text='scheduled'"));
+  assert.ok(statements.some((sql) => sql.includes("connection_config=COALESCE(connection_config,'{}'::jsonb) || $7::jsonb")), "connection_config harus digabung, bukan ditimpa");
 });
