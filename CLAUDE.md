@@ -56,6 +56,7 @@ Pengembangan lokal memakai backend port 3001 dan frontend port 5173.
 - Gunakan migration baru untuk perubahan skema; backup dan verifikasi database sebelum/selesai penerapan.
 - OPD mengusulkan dan mengisi indikator secara manual, bukan auto-generate atau semiotomatis.
 - Pertahankan RBAC, pemisahan kewenangan, provenance, audit trail, serta aturan bahwa dashboard pimpinan hanya membaca data terpublikasi.
+- Nilai beda antarsumber tidak pernah dipilih otomatis: ditandai konflik, ditetapkan BAPPERIDA/OPD pemilik (menu Konsolidasi Sumber); nilai identik dari sumber berbeda tetap dua baris bersumber (lihat `docs/external-connectors.md`).
 - Jangan commit secret, dump database, ekspor privat, cache lokal, atau build output.
 - Uji perubahan UI pada desktop, tablet, dan mobile.
 - Perubahan UI besar menggunakan branch dan pull request kecuali pemilik meminta langsung ke branch utama.

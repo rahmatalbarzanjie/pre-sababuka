@@ -57,7 +57,7 @@ export async function executiveRoutes(app: FastifyInstance): Promise<void> {
          JOIN sababuka.indicator_versions iv ON iv.id = obs.indicator_version_id AND iv.status = 'active'
          JOIN sababuka.indicators i ON i.id = iv.indicator_id AND i.is_active = true
          JOIN sababuka.categories c ON c.id = i.category_id AND c.is_active = true AND c.review_status = 'approved'
-         WHERE pub.status = 'active') AS active_publications`),
+         WHERE pub.status = 'active' AND NOT EXISTS (SELECT 1 FROM sababuka.observation_publication_blocks nb WHERE nb.observation_id = obs.id AND nb.reason = 'not_chosen')) AS active_publications`),
       app.db.query(
         `SELECT i.id::text AS indicator_id, i.code AS indicator_code, i.name AS indicator_name,
                 c.name AS category_name, pf.id::text AS policy_focus_id, pf.name AS policy_focus_name,
@@ -84,6 +84,7 @@ export async function executiveRoutes(app: FastifyInstance): Promise<void> {
            AND i.is_active = true
            AND c.is_active = true
            AND c.review_status = 'approved'
+           AND NOT EXISTS (SELECT 1 FROM sababuka.observation_publication_blocks nb WHERE nb.observation_id = obs.id AND nb.reason = 'not_chosen')
            AND ($1::uuid IS NULL OR pf.id = $1) AND ($2::uuid IS NULL OR per.id = $2)
          ORDER BY c.display_order, c.code, pi.display_order, i.name, i.code, pi.id`,
         [request.query.policy_focus_id ?? null, request.query.period_id ?? null],
@@ -103,6 +104,7 @@ export async function executiveRoutes(app: FastifyInstance): Promise<void> {
          FROM sababuka.publication_items pi
          JOIN sababuka.publications pub ON pub.id = pi.publication_id AND pub.status = 'active'
          JOIN sababuka.observations obs ON obs.id = pi.observation_id AND obs.quality_status IN ('valid', 'warning')
+         AND NOT EXISTS (SELECT 1 FROM sababuka.observation_publication_blocks nb WHERE nb.observation_id = obs.id AND nb.reason = 'not_chosen')
          JOIN sababuka.data_batches b ON b.id = obs.batch_id AND b.status IN ('approved', 'published')
          ORDER BY obs.id, pub.effective_at DESC, pub.id DESC
        )

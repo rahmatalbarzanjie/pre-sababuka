@@ -35,7 +35,7 @@ test("akses dan menu lintas role mengikuti permission serta scope", { skip: !dat
     };
 
     const opd = await login("opd"); const opdMenu = await menuCodes(opd.cookie);
-    assert.deepEqual(opdMenu, ["operations", "opd-profile", "submissions", "governance"]);
+    assert.deepEqual(opdMenu, ["operations", "opd-profile", "submissions", "consolidation", "governance"]);
     assert.ok(!opdMenu.includes("reviews") && !opdMenu.includes("administration"));
     const opdOperations = await app.inject({ method: "GET", url: "/api/v1/operations/dashboard", headers: { cookie: opd.cookie } });
     assert.equal(opdOperations.statusCode, 200, opdOperations.body);
@@ -44,7 +44,7 @@ test("akses dan menu lintas role mengikuti permission serta scope", { skip: !dat
     assert.equal(forbiddenCategory.statusCode, 403, forbiddenCategory.body);
 
     const bapperida = await login("bapperida"); const bappMenu = await menuCodes(bapperida.cookie);
-    assert.deepEqual(bappMenu, ["operations", "reviews", "publications", "governance", "analysis", "finance", "public-services", "connectors", "audit"]);
+    assert.deepEqual(bappMenu, ["operations", "reviews", "publications", "consolidation", "governance", "analysis", "finance", "public-services", "connectors", "audit"]);
     const bappMe = await app.inject({ method: "GET", url: "/api/v1/me", headers: { cookie: bapperida.cookie } });
     assert.equal(bappMe.statusCode, 200, bappMe.body);
     assert.ok(!bappMe.json().permissions.includes("indicator.submit"));
@@ -64,7 +64,7 @@ test("akses dan menu lintas role mengikuti permission serta scope", { skip: !dat
     assert.equal((await app.inject({ method: "POST", url: "/api/v1/assistant/sessions", headers: { cookie: pimpinan.cookie, "x-csrf-token": pimpinan.csrf }, payload: { title: "QA" } })).statusCode, 201);
 
     const kominfo = await login("kominfo"); const kominfoMenu = await menuCodes(kominfo.cookie);
-    assert.deepEqual(kominfoMenu, ["connectors", "dashboard", "audit"]);
+    assert.deepEqual(kominfoMenu, ["connectors", "consolidation", "dashboard", "audit"]);
     assert.ok(!kominfoMenu.includes("operations") && !kominfoMenu.includes("submissions"));
     assert.equal((await app.inject({ method: "GET", url: "/api/v1/audit/events", headers: { cookie: kominfo.cookie } })).statusCode, 200);
     assert.equal((await app.inject({ method: "POST", url: "/api/v1/publications", headers: { cookie: kominfo.cookie, "x-csrf-token": kominfo.csrf }, payload: { publication_key: "QA", publication_number: "QA-1", title: "Tidak boleh" } })).statusCode, 403);

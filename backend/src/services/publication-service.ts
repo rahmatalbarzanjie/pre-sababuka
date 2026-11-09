@@ -80,7 +80,8 @@ export class PublicationService {
               obs.numeric_value, obs.text_value, u.name AS unit_name, u.symbol AS unit_symbol,
               org.name AS organization_name,
               (b.status IN ('approved','published') AND iv.status = 'active'
-               AND i.is_active = true AND c.is_active = true AND c.review_status = 'approved') AS is_currently_eligible
+               AND i.is_active = true AND c.is_active = true AND c.review_status = 'approved'
+               AND NOT EXISTS (SELECT 1 FROM sababuka.observation_publication_blocks nb WHERE nb.observation_id = obs.id AND nb.reason = 'not_chosen')) AS is_currently_eligible
        FROM sababuka.publication_items pi
        JOIN sababuka.observations obs ON obs.id = pi.observation_id
        JOIN sababuka.indicator_versions iv ON iv.id = obs.indicator_version_id
@@ -92,7 +93,8 @@ export class PublicationService {
        JOIN sababuka.data_batches b ON b.id = obs.batch_id JOIN sababuka.organizations org ON org.id = b.organization_id
        WHERE pi.publication_id = $1
          AND ($2::boolean = false OR (b.status IN ('approved','published') AND iv.status = 'active'
-              AND i.is_active = true AND c.is_active = true AND c.review_status = 'approved'))
+              AND i.is_active = true AND c.is_active = true AND c.review_status = 'approved'
+              AND NOT EXISTS (SELECT 1 FROM sababuka.observation_publication_blocks nb WHERE nb.observation_id = obs.id AND nb.reason = 'not_chosen')))
        ORDER BY pi.display_order, i.name`, [id, isPimpinanOnly(auth)],
     );
     const publicationRow = publication.rows[0]!;
@@ -123,6 +125,7 @@ export class PublicationService {
        JOIN sababuka.units u ON u.id = iv.unit_id
        JOIN sababuka.periods per ON per.id = obs.period_id JOIN sababuka.organizations org ON org.id = b.organization_id
        WHERE ($1::uuid IS NULL OR per.id = $1)
+         AND NOT EXISTS (SELECT 1 FROM sababuka.observation_publication_blocks nb WHERE nb.observation_id = obs.id)
          AND NOT EXISTS (SELECT 1 FROM sababuka.publication_items pi JOIN sababuka.publications p ON p.id = pi.publication_id WHERE pi.observation_id = obs.id AND p.status = 'active')
        ORDER BY per.starts_on DESC, i.name, i.code, obs.id`, [periodId ?? null],
     );
@@ -175,6 +178,8 @@ export class PublicationService {
   async addItems(auth: AuthContext, id: string, observationIds: string[], audit: AuditContext) {
     const before = await this.get(auth, id);
     if (before.status !== "draft") throw new ApiError(409, "CONFLICT", "Item hanya dapat ditambahkan pada publikasi draft.");
+    const held = await this.db.query(`SELECT 1 FROM sababuka.observation_publication_blocks WHERE observation_id = ANY($1::uuid[]) LIMIT 1`, [observationIds]);
+    if (held.rows.length) throw new ApiError(422, "VALIDATION_ERROR", "Sebagian capaian ditahan karena nilainya berbeda antarsumber. Tetapkan nilai valid di menu Konsolidasi Sumber terlebih dahulu.");
     try {
       const result = await this.db.query(
         `INSERT INTO sababuka.publication_items (publication_id, observation_id, dataset_version_id, display_order)
@@ -218,7 +223,8 @@ export class PublicationService {
         `SELECT count(pi.id)::text AS total,
                 count(pi.id) FILTER (WHERE b.status IN ('approved','published')
                   AND iv.status = 'active' AND i.is_active = true
-                  AND c.is_active = true AND c.review_status = 'approved')::text AS eligible
+                  AND c.is_active = true AND c.review_status = 'approved'
+                  AND NOT EXISTS (SELECT 1 FROM sababuka.observation_publication_blocks nb WHERE nb.observation_id = obs.id))::text AS eligible
          FROM sababuka.publication_items pi
          JOIN sababuka.observations obs ON obs.id = pi.observation_id
          JOIN sababuka.data_batches b ON b.id = obs.batch_id

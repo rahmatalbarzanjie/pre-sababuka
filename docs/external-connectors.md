@@ -67,4 +67,15 @@ Detail teknis:
 
 ### Impor tidak menggandakan data
 
-Saat impor, baris staging yang nilainya sudah tercatat identik (indikator, periode, nilai; wilayah sama atau kosong pada data lama) dilewati dan dicatat di audit sebagai `skipped_existing`. Batch tidak dibuat bila semua baris dilewati, sehingga impor ulang aman. Nilai yang berbeda tetap masuk sebagai observasi baru agar bisa direkonsiliasi.
+Saat impor, baris staging yang nilainya sudah tercatat identik **dari sumber yang sama** (indikator, periode, nilai, nama sumber; wilayah sama atau kosong pada data lama) dilewati dan dicatat di audit sebagai `skipped_existing`. Batch tidak dibuat bila semua baris dilewati, sehingga impor ulang aman.
+
+### Konsolidasi nilai antarsumber
+
+Nilai dari sumber berbeda untuk slot yang sama (indikator, periode, wilayah, dimensi) mengikuti aturan berikut. Sistem tidak pernah memilih nilai sendiri.
+
+- **Nilai identik dari sumber berbeda:** bukan konflik; tetap dua baris dengan sumber masing-masing.
+- **Nilai berbeda:** ditandai konflik (`open`) dan tampil di menu **Konsolidasi Sumber** lengkap dengan sumbernya. BAPPERIDA, atau OPD pemilik indikator, menetapkan satu nilai valid dengan catatan alasan (min. 10 karakter, masuk audit). Observasi tidak diubah atau dihapus; keputusan disimpan di `observation_conflict_decisions`.
+- **Sumber baru dengan nilai lain** setelah keputusan membuka konflik kembali.
+- **Dashboard pimpinan hanya memuat data tervalidasi:** konflik terbuka menahan capaian dari kandidat kurasi dan dari penambahan ke publikasi; capaian yang tidak dipilih (`not_chosen`) tidak tampil di dashboard dan analisis pimpinan. Publikasi yang sudah aktif tidak ditarik otomatis saat konflik baru muncul; konflik itu terlihat di menu konsolidasi sampai diputuskan.
+
+Izin: `consolidation.view` (OPD, BAPPERIDA, Walidata, Superadmin) dan `consolidation.resolve` (OPD pemilik indikator, BAPPERIDA, Superadmin). API: `GET /consolidation/conflicts`, `POST /consolidation/decisions`.
