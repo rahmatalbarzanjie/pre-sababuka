@@ -20,6 +20,7 @@ import { assistantRoutes } from "./routes/assistant.js";
 import { monitoringRoutes } from "./routes/monitoring.js";
 import { operationRoutes } from "./routes/operations.js";
 import { connectorRoutes } from "./routes/connectors.js";
+import { consolidationRoutes } from "./routes/consolidation.js";
 import { opdProfileRoutes } from "./routes/opd-profiles.js";
 
 export interface BuildAppOptions {
@@ -145,6 +146,7 @@ export async function buildApp(options: BuildAppOptions): Promise<FastifyInstanc
       await api.register(monitoringRoutes);
       await api.register(operationRoutes);
       await api.register(connectorRoutes);
+      await api.register(consolidationRoutes);
       await api.register(opdProfileRoutes);
     },
     { prefix: "/api/v1" },

@@ -878,10 +878,11 @@ export class ConnectorService {
     for (const year of [...new Set(staging.rows.map((item) => Number(item.year)))]) {
       const period = await this.db.query<QueryResultRow & Record<string, unknown>>(`SELECT id::text FROM sababuka.periods WHERE code=$1`, [String(year)]);
       if (!period.rows[0]) throw new ApiError(400, "VALIDATION_ERROR", `Periode ${year} belum tersedia.`);
-      // Lewati nilai yang sudah tercatat identik (indikator, periode, wilayah, nilai) agar impor ulang tidak menggandakan observasi.
+      // Lewati nilai yang sudah tercatat identik DARI SUMBER YANG SAMA agar impor ulang tidak menggandakan observasi.
+      // Nilai identik dari sumber lain tetap masuk sebagai baris bersumber; nilai berbeda menjadi konflik konsolidasi.
       const values: typeof staging.rows = [];
       for (const item of staging.rows.filter((candidate) => Number(candidate.year) === year)) {
-        const same = await this.db.query(`SELECT 1 FROM sababuka.observations WHERE indicator_version_id=$1 AND period_id=$2 AND (geography_id=$3 OR geography_id IS NULL) AND numeric_value IS NOT DISTINCT FROM $4::numeric AND text_value IS NOT DISTINCT FROM $5::text LIMIT 1`, [row.indicator_version_id, period.rows[0].id, geographyIds.get(String(item.geography_code)), item.numeric_value ?? null, item.text_value ?? null]);
+        const same = await this.db.query(`SELECT 1 FROM sababuka.observations WHERE indicator_version_id=$1 AND period_id=$2 AND (geography_id=$3 OR geography_id IS NULL) AND numeric_value IS NOT DISTINCT FROM $4::numeric AND text_value IS NOT DISTINCT FROM $5::text AND source_name IS NOT DISTINCT FROM $6::text LIMIT 1`, [row.indicator_version_id, period.rows[0].id, geographyIds.get(String(item.geography_code)), item.numeric_value ?? null, item.text_value ?? null, row.source_name]);
         if (same.rows.length) skipped.push({ year, geography_code: String(item.geography_code) }); else values.push(item);
       }
       if (!values.length) continue;

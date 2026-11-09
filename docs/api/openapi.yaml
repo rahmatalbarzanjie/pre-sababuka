@@ -44,6 +44,8 @@ tags:
     description: Penelusuran dan ekspor jejak perubahan.
   - name: Connectors
     description: Konektor sumber eksternal (Satu Data, BPS, situs OPD), mapping, dan staging.
+  - name: Consolidation
+    description: Konflik nilai antarsumber dan keputusan nilai valid oleh BAPPERIDA atau OPD pemilik indikator.
 security:
   - sessionCookie: []
 paths:
@@ -1587,6 +1589,51 @@ paths:
         "400": {$ref: "#/components/responses/ValidationError"}
         "403": {$ref: "#/components/responses/Forbidden"}
         "429": {$ref: "#/components/responses/RateLimited"}
+  /consolidation/conflicts:
+    get:
+      tags: [Consolidation]
+      operationId: listConsolidationConflicts
+      summary: Daftar konflik nilai antarsumber beserta baris bersumbernya
+      description: |
+        Membutuhkan `consolidation.view`. Slot (indikator, periode, wilayah, dimensi) menjadi konflik hanya
+        bila nilai dari sumber berbeda tidak sama; nilai identik tetap berupa baris-baris bersumber.
+        BAPPERIDA melihat semua konflik, OPD hanya indikator miliknya. Konflik berstatus `open` menahan
+        capaian dari kurasi publikasi.
+      parameters:
+        - name: status
+          in: query
+          schema: {type: string, enum: [open, resolved, all], default: open}
+      responses:
+        "200": {$ref: "#/components/responses/ConnectorObject"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+  /consolidation/decisions:
+    post:
+      tags: [Consolidation]
+      operationId: decideConsolidationConflict
+      summary: Menetapkan satu capaian sebagai nilai valid pada konflik antarsumber
+      description: |
+        Membutuhkan `consolidation.resolve` dan kewenangan atas indikator (BAPPERIDA atau OPD pemilik).
+        Catatan alasan wajib (minimal 10 karakter) dan masuk audit. Observasi tidak diubah; capaian yang tidak
+        dipilih tetap tersimpan bersama sumbernya tetapi tidak dapat dikurasi. Sumber baru dengan nilai berbeda
+        membuka konflik kembali.
+      parameters:
+        - $ref: "#/components/parameters/CsrfToken"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [chosen_observation_id, note]
+              properties:
+                chosen_observation_id: {$ref: "#/components/schemas/Uuid"}
+                note: {type: string, minLength: 10, maxLength: 2000}
+      responses:
+        "200": {$ref: "#/components/responses/ConnectorObject"}
+        "400": {$ref: "#/components/responses/ValidationError"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+        "404": {$ref: "#/components/responses/NotFound"}
   /notifications:
     get:
       tags: [System]

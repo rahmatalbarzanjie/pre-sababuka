@@ -1344,6 +1344,52 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/consolidation/conflicts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Daftar konflik nilai antarsumber beserta baris bersumbernya
+         * @description Membutuhkan `consolidation.view`. Slot (indikator, periode, wilayah, dimensi) menjadi konflik hanya
+         *     bila nilai dari sumber berbeda tidak sama; nilai identik tetap berupa baris-baris bersumber.
+         *     BAPPERIDA melihat semua konflik, OPD hanya indikator miliknya. Konflik berstatus `open` menahan
+         *     capaian dari kurasi publikasi.
+         */
+        get: operations["listConsolidationConflicts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/consolidation/decisions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Menetapkan satu capaian sebagai nilai valid pada konflik antarsumber
+         * @description Membutuhkan `consolidation.resolve` dan kewenangan atas indikator (BAPPERIDA atau OPD pemilik).
+         *     Catatan alasan wajib (minimal 10 karakter) dan masuk audit. Observasi tidak diubah; capaian yang tidak
+         *     dipilih tetap tersimpan bersama sumbernya tetapi tidak dapat dikurasi. Sumber baru dengan nilai berbeda
+         *     membuka konflik kembali.
+         */
+        post: operations["decideConsolidationConflict"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/notifications": {
         parameters: {
             query?: never;
@@ -4156,6 +4202,46 @@ export interface operations {
             400: components["responses"]["ValidationError"];
             403: components["responses"]["Forbidden"];
             429: components["responses"]["RateLimited"];
+        };
+    };
+    listConsolidationConflicts: {
+        parameters: {
+            query?: {
+                status?: "open" | "resolved" | "all";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: components["responses"]["ConnectorObject"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    decideConsolidationConflict: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Token CSRF terikat ke sesi untuk seluruh operasi mutasi. */
+                "X-CSRF-Token": components["parameters"]["CsrfToken"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    chosen_observation_id: components["schemas"]["Uuid"];
+                    note: string;
+                };
+            };
+        };
+        responses: {
+            200: components["responses"]["ConnectorObject"];
+            400: components["responses"]["ValidationError"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
         };
     };
     listNotifications: {

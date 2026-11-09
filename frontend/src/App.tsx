@@ -24,6 +24,7 @@ const AssistantPage = lazy(() => import("./pages/AssistantPage").then((module) =
 const AuditPage = lazy(() => import("./pages/MonitoringPages").then((module) => ({ default: module.AuditPage })));
 const NotificationsPage = lazy(() => import("./pages/MonitoringPages").then((module) => ({ default: module.NotificationsPage })));
 const OperationsPage = lazy(() => import("./pages/OperationsPage").then((module) => ({ default: module.OperationsPage })));
+const ConsolidationPage = lazy(() => import("./pages/ConsolidationPage").then((module) => ({ default: module.ConsolidationPage })));
 const ConnectorsPage = lazy(() => import("./pages/ConnectorsPage").then((module) => ({ default: module.ConnectorsPage })));
 const DatasetPage = lazy(() => import("./pages/DatasetPage").then((module) => ({ default: module.DatasetPage })));
 const AnalysisPage = lazy(() => import("./pages/DecisionPages").then((module) => ({ default: module.AnalysisPage })));
@@ -59,6 +60,7 @@ const pageMeta: Record<string, { title: string; subtitle: string; permission?: s
   "/reviews": { title: "Verifikasi Pelaporan OPD", subtitle: "Periksa, kembalikan, atau setujui pelaporan yang dikirim perangkat daerah.", permission: "submission.review" },
   "/guidance": { title: "Pembinaan Data Statistik", subtitle: "Telaah standar, metadata, metodologi, dan konsistensi tanpa mengubah data milik produsen.", permission: "statistical_guidance.view" },
   "/publications": { title: "Kurasi & Publikasi", subtitle: "Pilih capaian yang disetujui sebelum diterbitkan ke dashboard pimpinan.", permission: "publication.view" },
+  "/consolidation": { title: "Konsolidasi Sumber", subtitle: "Tentukan nilai yang valid bila sumber data melaporkan angka berbeda untuk indikator yang sama.", permission: "consolidation.view" },
   "/connectors": { title: "Pusat Sinkronisasi Data", subtitle: "Telusuri sumber, staging mentah, transformasi, indikator, dan capaian dalam satu pipeline.", permission: "connector.view" },
   "/opd-profile": { title: "Profil Data OPD", subtitle: "Konfirmasi PIC, sumber data, dokumen acuan, dan baseline OPD.", permission: "submission.view" },
 };
@@ -118,6 +120,7 @@ function ProtectedApp() {
   else if (pathname === "/audit") content = <AuditPage />;
   else if (pathname === "/operations") content = <OperationsPage />;
   else if (pathname === "/connectors") content = <ConnectorsPage />;
+  else if (pathname === "/consolidation") content = <ConsolidationPage />;
   else if (pathname === "/opd-profile") content = <OpdProfilePage />;
   else content = <ComingSoon title={meta.title} />;
 
