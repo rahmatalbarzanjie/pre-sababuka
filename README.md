@@ -41,7 +41,7 @@ Backend API menjadi jalur data tunggal bagi seluruh kanal. Data mentah, data has
 - VPS baru telah diinventarisasi, tetapi aplikasi, domain development, dan layanan produksi belum diterapkan. Seluruh verifikasi aplikasi saat ini tetap dilakukan secara lokal pada database sementara yang terisolasi.
 - Lima kategori, 15 indikator, pemetaan awal OPD, dan target 2025–2029 telah disiapkan sebagai data draft pilot yang masih memerlukan validasi.
 - Administrasi organisasi/OPD, pengguna, assignment role, permission, menu, pengaturan sistem, dan feature flag telah diimplementasikan sebagai API lokal.
-- Undangan pengguna, aktivasi password, enrollment/verifikasi MFA TOTP, dan recovery code sekali pakai telah diimplementasikan.
+- Undangan pengguna dan aktivasi password telah diimplementasikan. MFA dihapus (migration 057): login memakai email/username dan kata sandi.
 - Migration 001–013, API master indikator, workflow data, publikasi, provenance sumber, asisten, dan antarmuka lokal telah melalui build serta integration test.
 - Transisi review, persetujuan, aktivasi, dan arsip versi indikator telah diimplementasikan dengan permission serta audit trail.
 - Formulir realisasi per OPD/periode, penyimpanan capaian, serta alur submit–return–approve telah diimplementasikan dan diuji pada database sementara.

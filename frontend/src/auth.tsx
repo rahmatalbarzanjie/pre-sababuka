@@ -5,8 +5,6 @@ import type { CurrentUser, MenuItem } from "./types";
 interface LoginInput {
   identifier: string;
   password: string;
-  mfa_code?: string;
-  recovery_code?: string;
 }
 
 interface AuthState {

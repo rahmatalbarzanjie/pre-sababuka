@@ -50,7 +50,7 @@ const pageMeta: Record<string, { title: string; subtitle: string; permission?: s
   "/admin/roles": { title: "Peran dan Hak Akses", subtitle: "Atur kewenangan setiap peran dengan prinsip akses minimum.", permission: "role.view" },
   "/admin/menus": { title: "Pengaturan Menu", subtitle: "Tentukan menu yang tampil untuk setiap peran.", permission: "menu.manage" },
   "/admin/system": { title: "Konfigurasi Sistem", subtitle: "Kelola kendali fitur dan parameter aplikasi yang tidak bersifat rahasia.", permission: "system.configure" },
-  "/admin/profile": { title: "Keamanan Akun", subtitle: "Kelola Authenticator dan perlindungan akun Anda." },
+  "/admin/profile": { title: "Keamanan Akun", subtitle: "Kelola kata sandi dan perlindungan akun Anda." },
   "/governance/categories": { title: "Kategori", subtitle: "Kelompokkan indikator berdasarkan fokus pembangunan daerah.", permission: "category.view" },
   "/governance/indicators": { title: "Matriks Indikator", subtitle: "Finalisasi definisi, sumber, target tahunan, serta OPD penanggung jawab indikator pembangunan.", permission: "indicator.view" },
   "/governance/focuses": { title: "Fokus Kebijakan", subtitle: "Modul fokus kebijakan sedang disiapkan.", permission: "policy_focus.view" },

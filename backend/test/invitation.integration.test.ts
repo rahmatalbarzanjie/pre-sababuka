@@ -2,7 +2,6 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { buildApp } from "../src/app.js";
 import { createDatabase } from "../src/database.js";
-import { generateTotpCode } from "../src/security/mfa.js";
 import { testConfig } from "./test-config.js";
 
 const databaseUrl = process.env.INTEGRATION_DATABASE_URL;
@@ -10,7 +9,7 @@ const adminEmail = process.env.INTEGRATION_ADMIN_EMAIL ?? "admin.integration@sab
 const adminPassword = process.env.INTEGRATION_ADMIN_PASSWORD ?? "integration-password-not-for-production";
 
 test(
-  "undangan, aktivasi TOTP, login MFA, dan recovery code berjalan end-to-end",
+  "undangan, aktivasi dengan kata sandi, dan login tanpa MFA berjalan end-to-end",
   { skip: !databaseUrl },
   async () => {
     const db = createDatabase(databaseUrl!);
@@ -73,29 +72,14 @@ test(
       assert.equal(invitation.statusCode, 200, invitation.body);
       assert.equal(invitation.json().email, "mfa.integration@sababuka.test");
 
-      const setup = await app.inject({
-        method: "POST",
-        url: `/api/v1/auth/invitations/${invitationToken}/mfa/setup`,
-      });
-      assert.equal(setup.statusCode, 200, setup.body);
-      const secret = setup.json().secret as string;
-      assert.ok(setup.json().provisioning_uri.startsWith("otpauth://totp/"));
-
       const userPassword = "Mfa-Integration-Password-2026!";
-      // Gunakan counter tepat sebelum periode berjalan. Mengurangi 30 detik dari
-      // waktu saat ini dapat menjadi dua counter lama bila request melintasi batas
-      // periode TOTP, sehingga test sesekali gagal di runner CI yang cepat.
-      const currentTotpPeriodStart = Math.floor(Date.now() / 30_000) * 30_000;
-      const acceptanceCode = generateTotpCode(secret, currentTotpPeriodStart - 1);
       const accepted = await app.inject({
         method: "POST",
         url: `/api/v1/auth/invitations/${invitationToken}/accept`,
-        payload: { password: userPassword, mfa_code: acceptanceCode },
+        payload: { password: userPassword },
       });
       assert.equal(accepted.statusCode, 200, accepted.body);
       assert.equal(accepted.json().status, "active");
-      assert.equal(accepted.json().recovery_codes.length, 8);
-      const recoveryCode = accepted.json().recovery_codes[0] as string;
 
       const reusedInvitation = await app.inject({
         method: "GET",
@@ -103,62 +87,20 @@ test(
       });
       assert.equal(reusedInvitation.statusCode, 404, reusedInvitation.body);
 
-      const missingMfa = await app.inject({
+      const login = await app.inject({
         method: "POST",
         url: "/api/v1/auth/login",
         payload: { identifier: "mfa.integration@sababuka.test", password: userPassword },
       });
-      assert.equal(missingMfa.statusCode, 401, missingMfa.body);
-      assert.equal(missingMfa.json().error.code, "MFA_REQUIRED");
-
-      const totpLogin = await app.inject({
-        method: "POST",
-        url: "/api/v1/auth/login",
-        payload: {
-          identifier: "mfa.integration@sababuka.test",
-          password: userPassword,
-          mfa_code: generateTotpCode(secret),
-        },
-      });
-      assert.equal(totpLogin.statusCode, 200, totpLogin.body);
-      const totpBody = totpLogin.json();
-      const totpCookie = String(totpLogin.headers["set-cookie"]).split(";", 1)[0]!;
+      assert.equal(login.statusCode, 200, login.body);
+      assert.equal(login.json().user.mfa_required, false);
+      const cookie = String(login.headers["set-cookie"]).split(";", 1)[0]!;
       const logout = await app.inject({
         method: "POST",
         url: "/api/v1/auth/logout",
-        headers: { cookie: totpCookie, "x-csrf-token": totpBody.csrf_token },
+        headers: { cookie, "x-csrf-token": login.json().csrf_token },
       });
       assert.equal(logout.statusCode, 204, logout.body);
-
-      const recoveryLogin = await app.inject({
-        method: "POST",
-        url: "/api/v1/auth/login",
-        payload: {
-          identifier: "mfa.integration@sababuka.test",
-          password: userPassword,
-          recovery_code: recoveryCode,
-        },
-      });
-      assert.equal(recoveryLogin.statusCode, 200, recoveryLogin.body);
-      const recoveryBody = recoveryLogin.json();
-      const recoveryCookie = String(recoveryLogin.headers["set-cookie"]).split(";", 1)[0]!;
-      await app.inject({
-        method: "POST",
-        url: "/api/v1/auth/logout",
-        headers: { cookie: recoveryCookie, "x-csrf-token": recoveryBody.csrf_token },
-      });
-
-      const reusedRecovery = await app.inject({
-        method: "POST",
-        url: "/api/v1/auth/login",
-        payload: {
-          identifier: "mfa.integration@sababuka.test",
-          password: userPassword,
-          recovery_code: recoveryCode,
-        },
-      });
-      assert.equal(reusedRecovery.statusCode, 401, reusedRecovery.body);
-      assert.equal(reusedRecovery.json().error.code, "MFA_INVALID");
     } finally {
       await app.close();
       await db.end();

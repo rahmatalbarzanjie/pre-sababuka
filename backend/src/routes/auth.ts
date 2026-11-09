@@ -11,20 +11,15 @@ import { AccountService, type SelfRegistrationInput } from "../services/account-
 interface LoginBody {
   identifier: string;
   password: string;
-  mfa_code?: string;
-  recovery_code?: string;
 }
 
 const loginBodySchema = {
   type: "object",
   additionalProperties: false,
-  not: { required: ["mfa_code", "recovery_code"] },
   required: ["identifier", "password"],
   properties: {
     identifier: { type: "string", minLength: 3, maxLength: 255 },
     password: { type: "string", minLength: 8, maxLength: 256 },
-    mfa_code: { type: "string", pattern: "^[0-9]{6}$" },
-    recovery_code: { type: "string", pattern: "^[A-Za-z0-9-]{16,32}$" },
   },
 } as const;
 
@@ -77,8 +72,6 @@ export async function authenticationRoutes(app: FastifyInstance): Promise<void> 
       const result = await authService(request).login({
         identifier: request.body.identifier.trim(),
         password: request.body.password,
-        mfaCode: request.body.mfa_code,
-        recoveryCode: request.body.recovery_code,
         ...requestAuditContext(request),
       });
       if (!result) throw new ApiError(401, "INVALID_CREDENTIALS", "Email/username atau kata sandi salah.");
@@ -147,26 +140,7 @@ export async function authenticationRoutes(app: FastifyInstance): Promise<void> 
     async (request) => new AccountService(app.db, app.config).inspectInvitation(request.params.token),
   );
 
-  app.post<{ Params: { token: string } }>(
-    "/auth/invitations/:token/mfa/setup",
-    {
-      schema: {
-        params: {
-          type: "object",
-          additionalProperties: false,
-          required: ["token"],
-          properties: { token: { type: "string", minLength: 32, maxLength: 200 } },
-        },
-      },
-      config: { rateLimit: { max: 5, timeWindow: "1 minute" } },
-    },
-    async (request) => new AccountService(app.db, app.config).setupInvitationTotp(
-      request.params.token,
-      requestAuditContext(request),
-    ),
-  );
-
-  app.post<{ Params: { token: string }; Body: { password: string; mfa_code: string } }>(
+  app.post<{ Params: { token: string }; Body: { password: string } }>(
     "/auth/invitations/:token/accept",
     {
       schema: {
@@ -179,10 +153,9 @@ export async function authenticationRoutes(app: FastifyInstance): Promise<void> 
         body: {
           type: "object",
           additionalProperties: false,
-          required: ["password", "mfa_code"],
+          required: ["password"],
           properties: {
             password: { type: "string", minLength: 12, maxLength: 256 },
-            mfa_code: { type: "string", pattern: "^[0-9]{6}$" },
           },
         },
       },
@@ -191,38 +164,7 @@ export async function authenticationRoutes(app: FastifyInstance): Promise<void> 
     async (request) => new AccountService(app.db, app.config).acceptInvitation(
       request.params.token,
       request.body.password,
-      request.body.mfa_code,
       requestAuditContext(request),
     ),
-  );
-
-  app.post("/me/mfa/totp/setup", async (request) => {
-    requireCsrf(request);
-    return new AccountService(app.db, app.config).setupCurrentUserTotp(
-      request.auth!,
-      requestAuditContext(request),
-    );
-  });
-
-  app.post<{ Body: { mfa_code: string } }>(
-    "/me/mfa/totp/confirm",
-    {
-      schema: {
-        body: {
-          type: "object",
-          additionalProperties: false,
-          required: ["mfa_code"],
-          properties: { mfa_code: { type: "string", pattern: "^[0-9]{6}$" } },
-        },
-      },
-    },
-    async (request) => {
-      requireCsrf(request);
-      return new AccountService(app.db, app.config).confirmCurrentUserTotp(
-        request.auth!,
-        request.body.mfa_code,
-        requestAuditContext(request),
-      );
-    },
   );
 }

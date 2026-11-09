@@ -170,7 +170,6 @@ export async function administrationRoutes(app: FastifyInstance): Promise<void> 
             job_title: { type: ["string", "null"], maxLength: 160 },
             employee_id: { type: ["string", "null"], maxLength: 80 },
             status: { type: "string", enum: ["invited", "active", "suspended", "locked"] },
-            mfa_required: { type: "boolean" },
           },
         },
       },
@@ -184,8 +183,7 @@ export async function administrationRoutes(app: FastifyInstance): Promise<void> 
         Object.hasOwn(request.body, "full_name") ||
         Object.hasOwn(request.body, "contact_phone") ||
         Object.hasOwn(request.body, "job_title") ||
-        Object.hasOwn(request.body, "employee_id") ||
-        Object.hasOwn(request.body, "mfa_required")
+        Object.hasOwn(request.body, "employee_id")
       ) {
         requirePermission(request, "user.update");
       }

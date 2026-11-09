@@ -11,8 +11,6 @@ export const testConfig: AppConfig = {
   loginMaxFailures: 5,
   loginLockSeconds: 900,
   invitationTtlSeconds: 259_200,
-  mfaIssuer: "SABABUKA Test",
-  mfaEncryptionKey: Buffer.alloc(32, 7),
   connectorEncryptionKey: Buffer.alloc(32, 8),
   evidenceStoragePath: "./tmp/test-evidence",
   evidenceMaxBytes: 10_485_760,

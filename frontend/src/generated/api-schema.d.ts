@@ -72,23 +72,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/auth/invitations/{token}/mfa/setup": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Membuat secret TOTP untuk pengguna undangan */
-        post: operations["setupInvitationMfa"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/auth/invitations/{token}/accept": {
         parameters: {
             query?: never;
@@ -98,7 +81,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Mengaktifkan akun dengan password dan verifikasi TOTP */
+        /** Mengaktifkan akun dengan membuat password */
         post: operations["acceptInvitation"];
         delete?: never;
         options?: never;
@@ -134,40 +117,6 @@ export interface paths {
         get: operations["getCurrentMenu"];
         put?: never;
         post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/me/mfa/totp/setup": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Memulai enrollment TOTP untuk pengguna aktif */
-        post: operations["setupCurrentUserMfa"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/me/mfa/totp/confirm": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Memverifikasi enrollment TOTP dan menghasilkan recovery code */
-        post: operations["confirmCurrentUserMfa"];
         delete?: never;
         options?: never;
         head?: never;
@@ -256,7 +205,7 @@ export interface paths {
         options?: never;
         head?: never;
         /**
-         * Mengubah profil, status, atau kewajiban MFA pengguna
+         * Mengubah profil atau status pengguna
          * @description Membutuhkan `user.update`; perubahan status membutuhkan `user.activate`.
          */
         patch: operations["updateUser"];
@@ -1475,12 +1424,9 @@ export interface components {
             version: string;
             time: components["schemas"]["Timestamp"];
         };
-        /** @description mfa_code dan recovery_code saling eksklusif; kirim salah satu ketika akun mewajibkan MFA. */
         LoginRequest: {
             identifier: string;
             password: string;
-            mfa_code?: string;
-            recovery_code?: string;
         };
         SessionResponse: {
             user: components["schemas"]["CurrentUser"];
@@ -1492,30 +1438,15 @@ export interface components {
             email: string;
             full_name: string;
             expires_at: components["schemas"]["Timestamp"];
-            mfa_setup_started: boolean;
-        };
-        TotpSetupResponse: {
-            /** @description Nilai sensitif yang hanya ditampilkan saat enrollment. */
-            secret: string;
-            provisioning_uri: string;
-            issuer: string;
-            account: string;
         };
         InvitationAcceptInput: {
             password: string;
-            mfa_code: string;
         };
-        MfaConfirmInput: {
-            mfa_code: string;
-        };
-        RecoveryCodesResponse: {
-            recovery_codes: string[];
-        };
-        InvitationAcceptResponse: components["schemas"]["RecoveryCodesResponse"] & {
+        InvitationAcceptResponse: {
             /** Format: email */
             email: string;
-            /** @constant */
-            status: "active";
+            /** @enum {string} */
+            status: "active" | "pending_approval";
         };
         CurrentUser: {
             id: components["schemas"]["Uuid"];
@@ -2289,31 +2220,6 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
-    setupInvitationMfa: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Token acak sekali pakai; nilai asli tidak disimpan di database. */
-                token: components["parameters"]["InvitationToken"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Secret dan URI provisioning Authenticator; hanya ditampilkan pada tahap ini */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["TotpSetupResponse"];
-                };
-            };
-            404: components["responses"]["NotFound"];
-            429: components["responses"]["RateLimited"];
-        };
-    };
     acceptInvitation: {
         parameters: {
             query?: never;
@@ -2330,7 +2236,7 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Akun aktif; recovery code hanya dikirim sekali */
+            /** @description Akun aktif atau menunggu persetujuan pendaftaran */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -2388,61 +2294,6 @@ export interface operations {
                 };
             };
             401: components["responses"]["Unauthorized"];
-        };
-    };
-    setupCurrentUserMfa: {
-        parameters: {
-            query?: never;
-            header: {
-                /** @description Token CSRF terikat ke sesi untuk seluruh operasi mutasi. */
-                "X-CSRF-Token": components["parameters"]["CsrfToken"];
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Secret dan URI provisioning Authenticator */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["TotpSetupResponse"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            409: components["responses"]["Conflict"];
-        };
-    };
-    confirmCurrentUserMfa: {
-        parameters: {
-            query?: never;
-            header: {
-                /** @description Token CSRF terikat ke sesi untuk seluruh operasi mutasi. */
-                "X-CSRF-Token": components["parameters"]["CsrfToken"];
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["MfaConfirmInput"];
-            };
-        };
-        responses: {
-            /** @description MFA aktif; recovery code hanya dikirim sekali */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["RecoveryCodesResponse"];
-                };
-            };
-            400: components["responses"]["ValidationError"];
-            401: components["responses"]["Unauthorized"];
-            404: components["responses"]["NotFound"];
         };
     };
     listOrganizations: {

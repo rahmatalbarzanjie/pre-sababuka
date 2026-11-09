@@ -18,7 +18,6 @@ install -d -m 750 -o sababuka -g sababuka "$evidence_dir"
 
 if [[ ! -f "$env_file" ]]; then
   db_password=$(openssl rand -hex 24)
-  mfa_key=$(openssl rand -base64 32 | tr -d '\n')
   connector_key=$(openssl rand -base64 32 | tr -d '\n')
 
   sudo -u postgres psql -v ON_ERROR_STOP=1 -d postgres \
@@ -41,8 +40,6 @@ if [[ ! -f "$env_file" ]]; then
     'LOGIN_MAX_FAILURES=5' \
     'LOGIN_LOCK_SECONDS=900' \
     'INVITATION_TTL_SECONDS=259200' \
-    'MFA_ISSUER="SABABUKA Bersinar"' \
-    "MFA_ENCRYPTION_KEY=${mfa_key}" \
     "CONNECTOR_ENCRYPTION_KEY=${connector_key}" \
     "EVIDENCE_STORAGE_PATH=${evidence_dir}" \
     'EVIDENCE_MAX_BYTES=10485760' \

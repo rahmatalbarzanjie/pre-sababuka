@@ -9,8 +9,6 @@ export interface AppConfig {
   loginMaxFailures: number;
   loginLockSeconds: number;
   invitationTtlSeconds: number;
-  mfaIssuer: string;
-  mfaEncryptionKey: Buffer | null;
   connectorEncryptionKey: Buffer | null;
   evidenceStoragePath: string;
   evidenceMaxBytes: number;
@@ -43,18 +41,6 @@ export function loadConfig(): AppConfig {
   const databaseUrl = process.env.DATABASE_URL;
   if (!databaseUrl) throw new Error("DATABASE_URL wajib diatur.");
 
-  const rawMfaKey = process.env.MFA_ENCRYPTION_KEY;
-  let mfaEncryptionKey: Buffer | null = null;
-  if (rawMfaKey) {
-    mfaEncryptionKey = Buffer.from(rawMfaKey, "base64");
-    if (mfaEncryptionKey.length !== 32) {
-      throw new Error("MFA_ENCRYPTION_KEY harus berupa base64 dari tepat 32 byte.");
-    }
-  }
-  if (nodeEnv === "production" && !mfaEncryptionKey) {
-    throw new Error("MFA_ENCRYPTION_KEY wajib diatur pada production.");
-  }
-
   const rawConnectorKey = process.env.CONNECTOR_ENCRYPTION_KEY;
   let connectorEncryptionKey: Buffer | null = null;
   if (rawConnectorKey) {
@@ -75,8 +61,6 @@ export function loadConfig(): AppConfig {
     loginMaxFailures: integerEnv("LOGIN_MAX_FAILURES", 5, 1),
     loginLockSeconds: integerEnv("LOGIN_LOCK_SECONDS", 900, 60),
     invitationTtlSeconds: integerEnv("INVITATION_TTL_SECONDS", 259_200, 900),
-    mfaIssuer: process.env.MFA_ISSUER ?? "SABABUKA Bersinar",
-    mfaEncryptionKey,
     connectorEncryptionKey,
     evidenceStoragePath: process.env.EVIDENCE_STORAGE_PATH ?? "./storage/evidence",
     evidenceMaxBytes: integerEnv("EVIDENCE_MAX_BYTES", 10_485_760, 1_024),

@@ -45,7 +45,6 @@ export interface UserUpdateInput {
   job_title?: string | null;
   employee_id?: string | null;
   status?: "invited" | "active" | "suspended" | "locked";
-  mfa_required?: boolean;
 }
 
 export interface RoleAssignmentInput {
@@ -391,24 +390,12 @@ export class AdminService {
           if (!others.rowCount) throw new ApiError(409, "CONFLICT", "Superadmin aktif terakhir tidak dapat dinonaktifkan.");
         }
       }
-      if (input.mfa_required === true) {
-        const verifiedMfa = await client.query(
-          `SELECT 1 FROM sababuka.user_mfa_methods
-           WHERE user_id = $1 AND method_type = 'totp'
-             AND verified_at IS NOT NULL AND disabled_at IS NULL`,
-          [userId],
-        );
-        if (!verifiedMfa.rowCount) {
-          throw new ApiError(409, "CONFLICT", "MFA hanya dapat diwajibkan setelah Authenticator diverifikasi.");
-        }
-      }
       const result = await client.query<QueryResultRow & Record<string, unknown>>(
         `UPDATE sababuka.users
          SET email = CASE WHEN $2::boolean THEN $3::citext ELSE email END,
              username = CASE WHEN $4::boolean THEN $5::citext ELSE username END,
              full_name = COALESCE($6, full_name),
              status = COALESCE($7, status),
-             mfa_required = COALESCE($8, mfa_required),
              failed_login_count = CASE WHEN $7 = 'active' THEN 0 ELSE failed_login_count END,
              locked_until = CASE WHEN $7 = 'active' THEN NULL ELSE locked_until END,
              archived_at = CASE WHEN $7 = 'archived' THEN now() ELSE archived_at END
@@ -419,7 +406,7 @@ export class AdminService {
           userId,
           Object.hasOwn(input, "email"), input.email?.trim().toLowerCase() || null,
           Object.hasOwn(input, "username"), input.username?.trim() || null,
-          input.full_name?.trim() || null, input.status ?? null, input.mfa_required ?? null,
+          input.full_name?.trim() || null, input.status ?? null,
         ],
       );
       const user = result.rows[0]!;
