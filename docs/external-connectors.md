@@ -79,3 +79,7 @@ Nilai dari sumber berbeda untuk slot yang sama (indikator, periode, wilayah, dim
 - **Dashboard pimpinan hanya memuat data tervalidasi:** konflik terbuka menahan capaian dari kandidat kurasi dan dari penambahan ke publikasi; capaian yang tidak dipilih (`not_chosen`) tidak tampil di dashboard dan analisis pimpinan. Publikasi yang sudah aktif tidak ditarik otomatis saat konflik baru muncul; konflik itu terlihat di menu konsolidasi sampai diputuskan.
 
 Izin: `consolidation.view` (OPD, BAPPERIDA, Walidata, Superadmin) dan `consolidation.resolve` (OPD pemilik indikator, BAPPERIDA, Superadmin). API: `GET /consolidation/conflicts`, `POST /consolidation/decisions`.
+
+### Galat validasi per kolom
+
+Bila server menolak form (400), pesan menyebut nama kolom bermasalah dan kolom pada form mapping dan form indikator diberi bingkai merah (`aria-invalid`) lewat atribut `data-field` yang sama dengan nama properti body API. Tandanya hilang saat kolom diubah. Form lain dapat memakai `markInvalidFields` dari `frontend/src/fieldErrors.ts` dengan menambahkan `data-field`.

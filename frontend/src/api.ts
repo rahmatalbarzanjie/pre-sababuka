@@ -30,7 +30,7 @@ export class ApiClientError extends Error {
 }
 
 // Detail validasi Fastify/AJV memuat instancePath ("/year_field") atau params.missingProperty.
-function invalidFieldNames(details?: Array<Record<string, unknown>>): string[] {
+export function invalidFieldNames(details?: Array<Record<string, unknown>>): string[] {
   const names = new Set<string>();
   for (const detail of details ?? []) {
     const params = detail.params as { missingProperty?: unknown; additionalProperty?: unknown } | undefined;
