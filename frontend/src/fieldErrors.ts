@@ -1,20 +1,23 @@
-import { ApiClientError, invalidFieldNames } from "./api";
-
 /**
- * Menandai kolom form yang ditolak server (aria-invalid) berdasarkan detail validasi API.
- * Kolom dicari lewat atribut data-field yang sama dengan nama properti body. Tanda hilang saat pengguna mengubah kolom.
+ * Menandai kolom form yang ditolak server (aria-invalid). api() mengumumkan nama kolom bermasalah lewat event
+ * "sababuka:invalid-fields"; kolom dicari lewat atribut data-field yang sama dengan nama properti body API,
+ * di dalam dialog yang terbuka atau, bila tidak ada, di seluruh halaman. Tanda hilang saat kolom diubah.
  */
-export function markInvalidFields(root: ParentNode | null, error: unknown): void {
-  if (!root || !(error instanceof ApiClientError)) return;
-  root.querySelectorAll<HTMLElement>("[aria-invalid=\"true\"]").forEach((element) => element.removeAttribute("aria-invalid"));
-  let focused = false;
-  for (const path of invalidFieldNames(error.details)) {
-    const element = root.querySelector<HTMLElement>(`[data-field="${CSS.escape(path.split(".")[0] ?? path)}"]`);
-    if (!element) continue;
-    element.setAttribute("aria-invalid", "true");
-    const clear = () => element.removeAttribute("aria-invalid");
-    element.addEventListener("input", clear, { once: true });
-    element.addEventListener("change", clear, { once: true });
-    if (!focused) { element.focus({ preventScroll: false }); focused = true; }
-  }
+export function installServerFieldMarking(): () => void {
+  const onInvalid = (event: Event) => {
+    const names = (event as CustomEvent<string[]>).detail ?? [];
+    const scope: ParentNode = document.querySelector("[role=\"dialog\"]") ?? document;
+    let focused = false;
+    for (const path of names) {
+      const element = scope.querySelector<HTMLElement>(`[data-field="${CSS.escape(path.split(".")[0] ?? path)}"]`);
+      if (!element) continue;
+      element.setAttribute("aria-invalid", "true");
+      const clear = () => element.removeAttribute("aria-invalid");
+      element.addEventListener("input", clear, { once: true });
+      element.addEventListener("change", clear, { once: true });
+      if (!focused) { element.focus(); focused = true; }
+    }
+  };
+  window.addEventListener("sababuka:invalid-fields", onInvalid);
+  return () => window.removeEventListener("sababuka:invalid-fields", onInvalid);
 }

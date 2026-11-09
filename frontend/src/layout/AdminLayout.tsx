@@ -43,6 +43,7 @@ import { useAuth } from "../auth";
 import { navigate } from "../router";
 import type { LoginAnnouncement, MenuItem, NotificationItem } from "../types";
 import { api } from "../api";
+import { installServerFieldMarking } from "../fieldErrors";
 import { notificationDestination } from "../notification-routing";
 import { formatTanggal, Modal } from "../components";
 import { SababukaAssistantMark, SababukaLockup, SababukaMark } from "../branding/SababukaBrand";
@@ -187,6 +188,7 @@ export function AdminLayout({ pathname, title, subtitle, actions, children }: { 
     if (mainRef.current) observer.observe(mainRef.current, { childList: true, subtree: true });
     return () => observer.disconnect();
   }, [pathname]);
+  useEffect(() => installServerFieldMarking(), []);
   useEffect(() => {
     // Validasi bawaan browser (required, pattern) diteruskan sebagai aria-invalid agar terbaca pembaca layar.
     const root = mainRef.current;

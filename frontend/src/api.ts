@@ -77,6 +77,7 @@ export async function api<T>(
       // The fallback below keeps network/proxy errors understandable.
     }
     const fields = invalidFieldNames(body?.error.details);
+    if (fields.length && typeof window !== "undefined") window.dispatchEvent(new CustomEvent("sababuka:invalid-fields", { detail: fields }));
     const baseMessage = body?.error.message ?? `Permintaan gagal (${response.status}).`;
     throw new ApiClientError(
       response.status,
