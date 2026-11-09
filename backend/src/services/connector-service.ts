@@ -50,6 +50,19 @@ const YEARS = new Set(Array.from({ length: CONNECTOR_YEAR_MAX - CONNECTOR_YEAR_M
 function hash(value: string): string { return createHash("sha256").update(value, "utf8").digest("hex"); }
 function asText(value: unknown): string { return value === null || value === undefined ? "" : String(value).trim(); }
 
+export const BPS_WEBAPI_BASE = "https://webapi.bps.go.id/v1/api";
+
+/**
+ * Alamat dasar WebAPI BPS. Bila base_url sumber bukan host webapi.bps.go.id (mis. tertimpa alamat halaman
+ * publikasi), pakai alamat WebAPI resmi agar permintaan tidak menembak situs web BPS dan mendapat HTML.
+ */
+export function bpsApiBase(baseUrl: string | null | undefined): string {
+  try {
+    if (new URL(baseUrl ?? "").hostname === "webapi.bps.go.id") return (baseUrl as string).replace(/\/$/u, "");
+  } catch { /* alamat tidak valid: pakai bawaan */ }
+  return BPS_WEBAPI_BASE;
+}
+
 export function buildBpsDomainUrl(baseUrl: string, apiKey: string): string {
   const url = new URL(`${baseUrl.replace(/\/$/u, "")}/domain`);
   url.searchParams.set("type", "kab");
@@ -213,15 +226,15 @@ export class ConnectorService {
         const current = await client.query<{ source_id: string }>(`SELECT data_source_id::text AS source_id FROM sababuka.data_source_integrations WHERE id=$1 FOR UPDATE`, [profileId]);
         if (!current.rows[0]) throw new ApiError(404, "NOT_FOUND", "Profil integrasi tidak ditemukan.");
         sourceId = current.rows[0].source_id;
-        await client.query(`UPDATE sababuka.data_sources SET code=$2,name=$3,source_type=$4,base_url=$5,owner_organization_id=$6,connection_config=$7::jsonb,updated_at=now() WHERE id=$1`,
+        await client.query(`UPDATE sababuka.data_sources SET code=$2,name=$3,source_type=$4,base_url=$5,owner_organization_id=$6,connection_config=COALESCE(connection_config,'{}'::jsonb) || $7::jsonb,updated_at=now() WHERE id=$1`,
           [sourceId, input.code, input.name, sourceType, input.base_url ?? null, input.organization_id, JSON.stringify({ connector_kind: input.connector_kind, endpoint_path: input.endpoint_path ?? null, data_path: input.data_path ?? null, data_format: input.data_format })]);
-        await client.query(`UPDATE sababuka.data_source_integrations SET connector_kind=$2,auth_type=$3,data_format=$4,endpoint_path=$5,data_path=$6,sync_mode=$7,sync_interval_minutes=$8,verification_mode=$9,status=$10,notes=$11,updated_by=$12,next_sync_at=CASE WHEN $7='scheduled' THEN now()+make_interval(mins=>$8) ELSE NULL END WHERE id=$1`,
+        await client.query(`UPDATE sababuka.data_source_integrations SET connector_kind=$2,auth_type=$3,data_format=$4,endpoint_path=$5,data_path=$6,sync_mode=$7::text,sync_interval_minutes=$8::int,verification_mode=$9,status=$10,notes=$11,updated_by=$12,next_sync_at=CASE WHEN $7::text='scheduled' THEN now()+make_interval(mins=>$8::int) ELSE NULL END WHERE id=$1`,
           [profileId, input.connector_kind, input.auth_type, input.data_format, input.endpoint_path ?? null, input.data_path ?? null, input.sync_mode, input.sync_mode === "scheduled" ? input.sync_interval_minutes : null, input.verification_mode, input.status ?? "draft", input.notes ?? null, auth.user.id]);
       } else {
         const source = await client.query<{ id: string }>(`INSERT INTO sababuka.data_sources (code,name,source_type,base_url,owner_organization_id,connection_config,credential_reference,created_by) VALUES ($1,$2,$3,$4,$5,$6::jsonb,$7,$8) RETURNING id::text`,
           [input.code, input.name, sourceType, input.base_url ?? null, input.organization_id, JSON.stringify({ connector_kind: input.connector_kind, endpoint_path: input.endpoint_path ?? null, data_path: input.data_path ?? null, data_format: input.data_format }), input.auth_type === "none" ? null : `${input.code}_CREDENTIAL`, auth.user.id]);
         sourceId = source.rows[0]!.id;
-        await client.query(`INSERT INTO sababuka.data_source_integrations (data_source_id,connector_kind,auth_type,data_format,endpoint_path,data_path,sync_mode,sync_interval_minutes,verification_mode,status,notes,created_by,updated_by,next_sync_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$12,CASE WHEN $7='scheduled' THEN now()+make_interval(mins=>$8) ELSE NULL END)`,
+        await client.query(`INSERT INTO sababuka.data_source_integrations (data_source_id,connector_kind,auth_type,data_format,endpoint_path,data_path,sync_mode,sync_interval_minutes,verification_mode,status,notes,created_by,updated_by,next_sync_at) VALUES ($1,$2,$3,$4,$5,$6,$7::text,$8::int,$9,$10,$11,$12,$12,CASE WHEN $7::text='scheduled' THEN now()+make_interval(mins=>$8::int) ELSE NULL END)`,
           [sourceId, input.connector_kind, input.auth_type, input.data_format, input.endpoint_path ?? null, input.data_path ?? null, input.sync_mode, input.sync_mode === "scheduled" ? input.sync_interval_minutes : null, input.verification_mode, input.status ?? "draft", input.notes ?? null, auth.user.id]);
       }
       await recordAudit(client, { ...audit, eventType: profileId ? "connector.integration_updated" : "connector.integration_created", entityType: "data_source", entityId: sourceId, organizationId: input.organization_id, afterData: { ...input, credentials: input.auth_type === "none" ? "not_required" : "managed_separately" } as unknown as JsonObject });
@@ -271,7 +284,7 @@ export class ConnectorService {
     const secret = await this.resolveBpsSecret();
     if (!secret) throw new ApiError(409, "CONNECTOR_WAITING_KEY", "API key BPS belum dikonfigurasi.");
     const domain = asText(source.connection_config.domain_code) || "6203";
-    const url = buildBpsDomainUrl(source.base_url!, secret.value);
+    const url = buildBpsDomainUrl(bpsApiBase(source.base_url), secret.value);
     const response = await fetch(url, { signal: AbortSignal.timeout(15_000) });
     if (response.status === 401 || response.status === 403) throw new ApiError(502, "SOURCE_UNAVAILABLE", "API key ditolak oleh WebAPI BPS.");
     if (!response.ok) throw new Error(`BPS HTTP ${response.status}`);
@@ -430,11 +443,12 @@ export class ConnectorService {
       const secret = override ? { value: override } : await this.resolveBpsSecret();
       if (!secret) return this.failedProfile(source.code, started, new Error("API key BPS belum dikonfigurasi."));
       const domain = asText(source.connection_config.domain_code) || "6203";
-      const url = buildBpsDomainUrl(source.base_url!, secret.value);
+      const url = buildBpsDomainUrl(bpsApiBase(source.base_url), secret.value);
       const response = await fetch(url, { signal: AbortSignal.timeout(15_000) });
       if (response.status === 401 || response.status === 403) throw new Error("BPS_KEY_REJECTED");
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      const payload = await response.json() as JsonObject;
+      let payload: JsonObject;
+      try { payload = JSON.parse(await response.text()) as JsonObject; } catch { throw new Error("BPS_RESPONSE_NOT_JSON"); }
       const values = validateBpsDomainPayload(payload, domain);
       const titles = values.map((item) => asText(item.domain_name ?? item.name ?? item.title ?? item.var)).filter(Boolean);
       return { source_code: source.code, reachable: true, response_ms: Date.now() - started, platform: "BPS WebAPI", dataset_count: values.length || 1, resource_count: values.length, publishers: ["BPS Kabupaten Kapuas"], years: [2025, 2026, 2027, 2028, 2029], checked_at: new Date().toISOString(), error: null, candidate_summary: await this.matchCandidates(titles, source.id) };
@@ -449,7 +463,11 @@ export class ConnectorService {
       ? errorCode
       : errorCode === "BPS_KEY_REJECTED"
         ? "API key ditolak oleh WebAPI BPS. Periksa kembali key yang dimasukkan."
-        : errorCode === "BPS_DOMAIN_NOT_FOUND"
+        : errorCode === "BPS_RESPONSE_NOT_JSON"
+          ? "Alamat BPS tidak mengembalikan JSON. Pastikan alamat dasar sumber adalah https://webapi.bps.go.id/v1/api."
+          : /^HTTP \d{3}$/u.test(errorCode)
+            ? `WebAPI BPS membalas ${errorCode}. Coba lagi sebentar lagi atau periksa pengaturan sumber.`
+            : errorCode === "BPS_DOMAIN_NOT_FOUND"
           ? "Koneksi ke BPS berhasil, tetapi domain Kabupaten Kapuas (6203) tidak ditemukan."
           : errorCode === "BPS_RESPONSE_ERROR"
             ? "BPS menerima koneksi, tetapi menolak permintaan. Periksa API key, aplikasi yang terdaftar, dan parameter endpoint di portal BPS."
@@ -742,7 +760,7 @@ export class ConnectorService {
   /** Pencarian variabel BPS (metadata saja). Dipakai Penelusur BPS dan panel rujukan OPD. */
   async searchBpsVariables(keyword: string, page: number) {
     const source = await this.source("BPS_KAPUAS");
-    const payload = await this.bpsJson(source, (key) => buildBpsVariableSearchUrl(source.base_url!, this.bpsDomain(source), keyword, page, key));
+    const payload = await this.bpsJson(source, (key) => buildBpsVariableSearchUrl(bpsApiBase(source.base_url), this.bpsDomain(source), keyword, page, key));
     return { source: { code: source.code, name: source.name }, domain_code: this.bpsDomain(source), ...summarizeBpsVariables(payload) };
   }
 
@@ -772,7 +790,7 @@ export class ConnectorService {
     const windows = bpsYearWindows(CONNECTOR_YEAR_MIN - 3, CONNECTOR_YEAR_MAX);
     let merged: ReturnType<typeof parseBpsDataContent> | null = null;
     for (const window of windows) {
-      const payload = await this.bpsJson(source, (key) => buildBpsDataUrl(source.base_url!, domain, variableId, window, key));
+      const payload = await this.bpsJson(source, (key) => buildBpsDataUrl(bpsApiBase(source.base_url), domain, variableId, window, key));
       const parsed = parseBpsDataContent(payload, {}, domain);
       if (!merged) merged = parsed;
       else {
@@ -802,7 +820,7 @@ export class ConnectorService {
       mapping_suggestion: {
         source_code: source.code,
         external_dataset_id: variableId,
-        resource_url: `${source.base_url!.replace(/\/$/u, "")}/list/model/data/domain/${domain}/var/${variableId}`,
+        resource_url: `${bpsApiBase(source.base_url)}/list/model/data/domain/${domain}/var/${variableId}`,
         year_field: "tahun",
         value_field: "nilai",
         unit_field: "satuan",
@@ -820,7 +838,7 @@ export class ConnectorService {
     const filter: BpsDataFilter = { vervar: asText(bps.vervar) || null, turvar: asText(bps.turvar) || null, turtahun: asText(bps.turtahun) || null };
     const rows: JsonObject[] = [];
     for (const window of bpsYearWindows(CONNECTOR_YEAR_MIN, CONNECTOR_YEAR_MAX)) {
-      const payload = await this.bpsJson(source, (key) => buildBpsDataUrl(source.base_url!, domain, variableId, window, key));
+      const payload = await this.bpsJson(source, (key) => buildBpsDataUrl(bpsApiBase(source.base_url), domain, variableId, window, key));
       rows.push(...parseBpsDataContent(payload, filter, domain).rows);
     }
     const ambiguous = findAmbiguousYears(rows as never);
@@ -841,7 +859,7 @@ export class ConnectorService {
 
   private assertResourceUrlAllowed(source: SourceRow, raw: string): void {
     try {
-      const base = new URL(source.base_url!); const target = new URL(raw);
+      const base = new URL(source.source_type === "bps" ? bpsApiBase(source.base_url) : source.base_url!); const target = new URL(raw);
       if (target.protocol !== "https:" || target.hostname !== base.hostname) throw new Error("host mismatch");
     } catch {
       throw new ApiError(400, "SOURCE_INVALID", "URL resource harus HTTPS dan berasal dari host sumber yang terdaftar.");
