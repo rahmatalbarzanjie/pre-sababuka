@@ -78,7 +78,7 @@ export function DatasetPage() {
     <section className="panel dataset-catalog">
       <header className="panel-heading">
         <div><h2>Daftar dataset <ContextHelp label="Dataset">Katalog data yang sudah memiliki pemilik, sumber, metadata, dan versi. Dataset berbeda dari baris data mentah yang masih berada di staging.</ContextHelp></h2><p>Cari berdasarkan judul, kode, sumber, atau OPD pemilik.</p></div>
-        <form className="dataset-search" onSubmit={submitSearch}><label><Search /><span className="sr-only">Cari dataset</span><input value={queryInput} onChange={(event) => setQueryInput(event.target.value)} placeholder="Cari dataset, sumber, atau OPD" /></label><button className="button secondary" type="submit">Cari</button></form>
+        <form className="dataset-search" onSubmit={submitSearch}><label><Search /><span className="sr-only">Cari dataset</span><input data-field="query_input" value={queryInput} onChange={(event) => setQueryInput(event.target.value)} placeholder="Cari dataset, sumber, atau OPD" /></label><button className="button secondary" type="submit">Cari</button></form>
       </header>
 
       {datasets.loading ? <div className="panel-loading"><Spinner label="Memuat katalog" /></div>

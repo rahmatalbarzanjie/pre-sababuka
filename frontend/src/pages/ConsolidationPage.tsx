@@ -91,7 +91,7 @@ function ConflictCard({ conflict, canResolve, onDecided }: { conflict: Conflict;
         <div className="consolidation-form">
           <label className="field">
             <span>Alasan penetapan (wajib)</span>
-            <textarea rows={3} value={note} minLength={10} maxLength={2000} placeholder="Contoh: sesuai rilis resmi BPS terbaru setelah dikonfirmasi ke OPD pemilik data." onChange={(event) => setNote(event.target.value)} />
+            <textarea rows={3} data-field="note" value={note} minLength={10} maxLength={2000} placeholder="Contoh: sesuai rilis resmi BPS terbaru setelah dikonfirmasi ke OPD pemilik data." onChange={(event) => setNote(event.target.value)} />
             <small>Minimal 10 karakter. Catatan ini masuk jejak audit.</small>
           </label>
           {error && <Notice tone="error">{error}</Notice>}

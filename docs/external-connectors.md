@@ -82,4 +82,4 @@ Izin: `consolidation.view` (OPD, BAPPERIDA, Walidata, Superadmin) dan `consolida
 
 ### Galat validasi per kolom
 
-Bila server menolak form (400), pesan menyebut nama kolom bermasalah dan kolom pada form mapping dan form indikator diberi bingkai merah (`aria-invalid`) lewat atribut `data-field` yang sama dengan nama properti body API. Tandanya hilang saat kolom diubah. Form lain dapat memakai `markInvalidFields` dari `frontend/src/fieldErrors.ts` dengan menambahkan `data-field`.
+Bila server menolak form (400), `api()` mengumumkan nama kolom bermasalah lewat event `sababuka:invalid-fields`; `installServerFieldMarking` (`frontend/src/fieldErrors.ts`, dipasang di AdminLayout) memberi bingkai merah (`aria-invalid`) dan fokus pada kolom bertanda `data-field` yang sama dengan nama properti body API, di dalam dialog yang terbuka atau seluruh halaman. Tanda hilang saat kolom diubah. Form baru cukup menambahkan `data-field="nama_properti_api"` pada input, select, atau textarea; tidak perlu kode di handler submit. Pesan galat tetap menyebut nama kolom bermasalah.

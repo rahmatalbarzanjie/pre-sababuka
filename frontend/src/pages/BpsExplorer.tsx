@@ -143,7 +143,7 @@ export function BpsExplorer({ onApply }: { onApply(suggestion: BpsMappingSuggest
           {detail.vervars.length > 1 && (
             <label className="field">
               <span>{detail.vervar_label ?? "Kategori"}</span>
-              <select value={vervar} onChange={(event) => { setVervar(event.target.value); setApplied(false); }}>
+              <select data-field="vervar" value={vervar} onChange={(event) => { setVervar(event.target.value); setApplied(false); }}>
                 <option value="">Pilih kategori</option>
                 {detail.vervars.map((option) => <option key={option.val} value={option.val}>{option.label}</option>)}
               </select>
@@ -153,7 +153,7 @@ export function BpsExplorer({ onApply }: { onApply(suggestion: BpsMappingSuggest
           {detail.turvars.length > 1 && (
             <label className="field">
               <span>Rincian tambahan</span>
-              <select value={turvar} onChange={(event) => { setTurvar(event.target.value); setApplied(false); }}>
+              <select data-field="turvar" value={turvar} onChange={(event) => { setTurvar(event.target.value); setApplied(false); }}>
                 {detail.turvars.map((option) => <option key={option.val} value={option.val}>{option.label}</option>)}
               </select>
             </label>
