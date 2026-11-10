@@ -88,7 +88,7 @@ const roleLabels: Record<string, string> = {
 };
 
 function sectionChildren(menu: MenuItem[], code: string): MenuItem[] {
-  return menu.find((item) => item.code === code)?.children.filter((item) => item.route_name && supportedRoutes.has(item.route_name)) ?? [];
+  return menu.find((item) => item.code === code)?.children.filter((item) => item.route_name && supportedRoutes.has(item.route_name) && !item.navigation_disabled) ?? [];
 }
 
 export function AdminLayout({ pathname, title, subtitle, actions, children }: { pathname: string; title: string; subtitle: string; actions?: ReactNode; children: ReactNode }) {
@@ -133,10 +133,10 @@ export function AdminLayout({ pathname, title, subtitle, actions, children }: { 
     { code: "analysis", label: "Analisis keputusan", entries: analysisEntries },
     { code: "governance", label: "Tata kelola data", entries: governanceEntries },
     { code: "sources", label: "Walidata", entries: sourceEntries },
-    { code: "operations", label: isBapperida && !isSuperadmin ? "Pelaporan dan publikasi" : "Pelaporan capaian", entries: operationalEntries },
+    { code: "operations", label: isPimpinan ? "Rilis resmi" : isBapperida && !isSuperadmin ? "Pelaporan dan publikasi" : "Pelaporan capaian", entries: operationalEntries },
     { code: "audit", label: "Pengawasan", entries: auditEntries },
     { code: "administration", label: "Konfigurasi internal", entries: adminEntries },
-  ].filter((section) => section.entries.length > 0).sort((a, b) => Math.min(...a.entries.map((entry) => entry.display_order)) - Math.min(...b.entries.map((entry) => entry.display_order))), [adminEntries, analysisEntries, auditEntries, governanceEntries, isBapperida, isSuperadmin, operationalEntries, primaryEntries, sourceEntries, systemEntries]);
+  ].filter((section) => section.entries.length > 0).sort((a, b) => Math.min(...a.entries.map((entry) => entry.display_order)) - Math.min(...b.entries.map((entry) => entry.display_order))), [adminEntries, analysisEntries, auditEntries, governanceEntries, isBapperida, isPimpinan, isSuperadmin, operationalEntries, primaryEntries, sourceEntries, systemEntries]);
   const areaLabel = ["/admin", "/admin/opd-monitoring"].includes(pathname) ? "Administrasi Sistem"
     : pathname.startsWith("/admin") ? "Konfigurasi Internal"
     : ["/dashboard", "/executive", "/assistant"].includes(pathname) ? "Ruang Pimpinan"

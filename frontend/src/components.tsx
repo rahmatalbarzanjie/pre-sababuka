@@ -128,7 +128,7 @@ export function Modal({ title, onClose, children, wide = false, className = "" }
 }
 
 export function Notice({ tone, children }: { tone: "error" | "success" | "warning" | "info"; children: ReactNode | Error }) {
-  const Icon = tone === "success" ? CheckCircle2 : AlertTriangle;
+  const Icon = tone === "success" ? CheckCircle2 : tone === "info" ? Info : AlertTriangle;
   return <div className={`notice ${tone}`} role={tone === "error" ? "alert" : "status"} aria-live="polite"><Icon size={18} aria-hidden /><div>{children instanceof Error ? children.message : children}</div></div>;
 }
 

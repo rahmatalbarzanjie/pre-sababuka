@@ -54,5 +54,7 @@ export function capaianStatusLabel(value: string | null | undefined, viewpoint: 
   };
   if (!value) return "-";
   const key = value.toLowerCase();
+  // Laporan capaian tidak punya tahap aktivasi; "approved" berarti sudah disetujui BAPPERIDA.
+  if (key === "approved" && (viewpoint === "opd" || viewpoint === "bapperida")) return "Disetujui BAPPERIDA";
   return POV_STATUS_LABELS[viewpoint]?.[key] ?? labels[key] ?? statusLabel(value, viewpoint);
 }

@@ -83,7 +83,7 @@ export function DatasetPage() {
 
       {datasets.loading ? <div className="panel-loading"><Spinner label="Memuat katalog" /></div>
         : datasets.error ? <ErrorState title="Katalog dataset belum dapat dimuat" onRetry={datasets.reload}>{datasets.error}</ErrorState>
-        : !rows.length ? <EmptyState title={query ? "Dataset tidak ditemukan" : "Belum ada dataset"} action={canManageSources ? <button className="button primary" onClick={() => navigate("/connectors")}>Daftarkan sumber data</button> : undefined}>{query ? "Coba kata pencarian yang lebih umum." : "Dataset akan tampil setelah sumber terdaftar dan proses sinkronisasi membentuk versi dataset."}</EmptyState>
+        : !rows.length ? <EmptyState title={query ? "Dataset tidak ditemukan" : "Belum ada dataset"} action={canManageSources ? <button className="button primary" onClick={() => navigate("/connectors")}>Daftarkan sumber data</button> : undefined}>{query ? "Coba kata pencarian yang lebih umum." : (canManageSources ? "Dataset akan tampil setelah sumber terdaftar dan proses sinkronisasi membentuk versi dataset." : "Dataset dibentuk Walidata dari sumber resmi (Satu Data, BPS Kapuas, website OPD). Data yang Anda isi sendiri dikirim lewat Pelaporan Realisasi dan tidak perlu didaftarkan di sini.")}</EmptyState>
         : <>
           <div className="table-scroll dataset-table"><table><thead><tr><th>Dataset</th><th>Sumber dan pemilik</th><th>Versi</th><th>Keterhubungan</th><th>Status</th><th>Diperbarui</th></tr></thead><tbody>{rows.map((item) => <tr key={item.id}>
             <td><strong>{item.title}</strong><small>{item.code}{metadataTopic(item.metadata) ? ` - ${metadataTopic(item.metadata)}` : ""}</small></td>

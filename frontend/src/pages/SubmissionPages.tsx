@@ -49,7 +49,7 @@ export function SubmissionsPage({ review = false, guidance = false }: { review?:
       <div className="status-filter" role="group" aria-label="Filter status capaian">
         {[
           ["", review ? "Semua" : "Semua"],
-          ...(review ? [["submitted", "Perlu Anda periksa"], ["under_review", "Sedang Anda periksa"], ["returned", "Dikembalikan ke OPD"], ["approved", "Disetujui"]] : guidance ? [["submitted", "Menunggu pemeriksaan BAPPERIDA"], ["under_review", "Sedang diperiksa BAPPERIDA"], ["returned", "Perlu ditinjau kembali"], ["approved", "Disetujui"]] : [["draft", "Perlu Anda lengkapi"], ["returned", "Perlu Anda perbaiki"], ["submitted", "Menunggu pemeriksaan BAPPERIDA"], ["approved", "Selesai"]]),
+          ...(review ? [["submitted", "Perlu Anda periksa"], ["under_review", "Sedang Anda periksa"], ["returned", "Dikembalikan ke OPD"], ["approved", "Disetujui"]] : guidance ? [["submitted", "Menunggu pemeriksaan BAPPERIDA"], ["under_review", "Sedang diperiksa BAPPERIDA"], ["returned", "Perlu ditinjau kembali"], ["approved", "Disetujui"]] : [["draft", "Perlu Anda lengkapi"], ["returned", "Perlu Anda perbaiki"], ["submitted", "Menunggu pemeriksaan BAPPERIDA"], ["approved", "Disetujui"]]),
         ].map(([value, label]) => <button key={value} className={status === value ? "active" : ""} onClick={() => { setStatus(value); setPage(1); }}>{label}</button>)}
       </div>
       <PageSizeControl value={pageSize} onChange={(size) => { setPageSize(size); setPage(1); }} />
