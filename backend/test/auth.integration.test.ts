@@ -46,7 +46,7 @@ test(
         items.flatMap((item) => [item, ...flattenMenu(item.children as typeof items)]);
       const menuItems = flattenMenu(menu.json().data);
       const placeholders = menuItems.filter((item) => item.navigation_disabled);
-      assert.deepEqual(placeholders.map((item) => item.code).sort(), ["metadata-profiles"]);
+      assert.deepEqual(placeholders.map((item) => item.code).sort(), ["focuses", "metadata-profiles"]);
       assert.ok(placeholders.every((item) => item.badge === "Segera"));
 
       const configuredPlaceholders = await db.query<{ code: string; badge: string | null }>(
