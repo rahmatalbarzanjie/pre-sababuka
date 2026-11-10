@@ -1,5 +1,11 @@
 # Changelog API
 
+## 2026-11-09
+
+- Menghapus MFA: login hanya memakai email/username dan kata sandi; `mfa_code` dan `recovery_code` tidak lagi diterima pada `/auth/login`.
+- Menghapus `/auth/invitations/{token}/mfa/setup`, `/me/mfa/totp/setup`, dan `/me/mfa/totp/confirm`. `/auth/invitations/{token}/accept` hanya menerima `password` dan tidak mengembalikan recovery code.
+- `mfa_required` pada respons pengguna tetap ada demi kompatibilitas, selalu `false`; `PATCH /users/{user_id}` tidak lagi menerima `mfa_required`.
+
 ## 2026-10-04
 
 - Menambahkan form capaian manual berbasis OPD dan periode pada `/submissions`.

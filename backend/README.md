@@ -9,8 +9,7 @@ Fondasi backend MVP menggunakan TypeScript, Node.js 22, Fastify 5, PostgreSQL/Po
 - cookie session `HttpOnly` dan token CSRF;
 - password Argon2id dan lockout login;
 - undangan sekali pakai dengan masa berlaku;
-- aktivasi akun dengan password dan verifikasi TOTP;
-- MFA TOTP terenkripsi, anti-replay, dan recovery code sekali pakai;
+- aktivasi akun dengan membuat password (tanpa MFA);
 - profil pengguna, role, permission, serta scope organisasi;
 - menu dinamis berdasarkan permission;
 - pengelolaan organisasi/OPD dan pengguna;
@@ -24,7 +23,7 @@ Fondasi backend MVP menggunakan TypeScript, Node.js 22, Fastify 5, PostgreSQL/Po
 - audit login, logout, dan seluruh mutasi administrasi;
 - migration berurutan dengan checksum;
 - bootstrap superadmin khusus development;
-- unit test serta integration test administrasi, autentikasi/MFA, tata kelola, workflow OPD, dan akses lintas role.
+- unit test serta integration test administrasi, autentikasi, tata kelola, workflow OPD, dan akses lintas role.
 
 Endpoint yang sudah aktif:
 
@@ -33,14 +32,12 @@ Endpoint yang sudah aktif:
 | GET | `/api/v1/health` | Status aplikasi dan database |
 | POST | `/api/v1/auth/login` | Membuat session |
 | POST | `/api/v1/auth/logout` | Mencabut session |
-| GET, POST | `/api/v1/auth/invitations/{token}...` | Pemeriksaan, setup MFA, dan penerimaan undangan |
+| GET, POST | `/api/v1/auth/invitations/{token}...` | Pemeriksaan dan penerimaan undangan |
 | GET | `/api/v1/me` | Profil, role, permission, dan scope |
 | GET | `/api/v1/me/menu` | Menu yang diizinkan untuk pengguna |
-| POST | `/api/v1/me/mfa/totp/setup` | Enrollment Authenticator pengguna aktif |
-| POST | `/api/v1/me/mfa/totp/confirm` | Verifikasi MFA dan pembuatan recovery code |
 | GET, POST | `/api/v1/organizations` | Daftar dan pembuatan organisasi/OPD |
 | GET, POST | `/api/v1/users` | Daftar dan pembuatan undangan pengguna |
-| PATCH | `/api/v1/users/{user_id}` | Profil, status, dan kebijakan MFA pengguna |
+| PATCH | `/api/v1/users/{user_id}` | Profil dan status pengguna |
 | POST | `/api/v1/users/{user_id}/role-assignments` | Assignment role dan scope |
 | GET | `/api/v1/roles`, `/api/v1/permissions` | Referensi role dan permission |
 | PUT | `/api/v1/roles/{role_id}/permissions` | Konfigurasi permission role |
@@ -124,8 +121,6 @@ pnpm test:integration
 - Jangan simpan `.env`, password, session token, atau token CSRF di repository.
 - `COOKIE_SECURE=true` wajib pada staging dan production yang memakai HTTPS.
 - Bootstrap superadmin menolak berjalan pada `NODE_ENV=production`.
-- Secret TOTP dienkripsi AES-256-GCM menggunakan `MFA_ENCRYPTION_KEY` yang tidak boleh disimpan di repository.
-- Kode TOTP memiliki replay protection; recovery code hanya dapat digunakan satu kali.
 - Token undangan dan session hanya disimpan sebagai hash, bukan nilai aslinya.
 - Permission dan menu inti Superadmin dilindungi agar konfigurasi tidak mengunci akses administrasi.
 - Perubahan status pengguna mencabut session aktif ketika akun tidak lagi aktif.

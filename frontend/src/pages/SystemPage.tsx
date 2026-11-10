@@ -145,35 +145,29 @@ function SettingForm({ onClose, onSaved }: { onClose(): void; onSaved(): void })
 }
 
 export function SecurityPage() {
-  const { user, refresh } = useAuth();
-  const [setup, setSetup] = useState<{ secret: string; provisioning_uri: string; issuer: string; account: string } | null>(null);
-  const [code, setCode] = useState("");
-  const [recovery, setRecovery] = useState<string[] | null>(null);
+  const { user } = useAuth();
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
-  async function start() {
-    setBusy(true); setError(null);
+  const [done, setDone] = useState(false);
+  async function submit(event: FormEvent) {
+    event.preventDefault();
+    if (newPassword !== confirmPassword) { setError("Konfirmasi kata sandi belum sama."); return; }
+    setBusy(true); setError(null); setDone(false);
     try {
-      setSetup(await api<{ secret: string; provisioning_uri: string; issuer: string; account: string }>(
-        "/me/mfa/totp/setup",
-        { method: "POST", mutation: true },
-      ));
-    }
-    catch (reason) { setError(reason instanceof Error ? reason.message : "Enrollment MFA gagal."); }
+      await api("/me/password", { method: "POST", mutation: true, body: jsonBody({ current_password: currentPassword, new_password: newPassword }) });
+      setCurrentPassword(""); setNewPassword(""); setConfirmPassword(""); setDone(true);
+    } catch (reason) { setError(reason instanceof Error ? reason.message : "Kata sandi belum dapat diubah."); }
     finally { setBusy(false); }
   }
-  async function confirm(event: FormEvent) {
-    event.preventDefault(); setBusy(true); setError(null);
-    try {
-      const response = await api<{ recovery_codes: string[] }>("/me/mfa/totp/confirm", { method: "POST", mutation: true, body: jsonBody({ mfa_code: code }) });
-      setRecovery(response.recovery_codes); setSetup(null); await refresh();
-    } catch (reason) { setError(reason instanceof Error ? reason.message : "Kode Authenticator tidak valid."); }
-    finally { setBusy(false); }
-  }
-  async function copy(value: string) { await navigator.clipboard.writeText(value); setCopied(true); setTimeout(() => setCopied(false), 1600); }
-  return <section className="security-grid"><article className="panel security-overview"><span className={`security-shield ${user?.mfa_required ? "active" : ""}`}><ShieldCheck /></span><div><span className="eyebrow">Status keamanan</span><h2>{user?.mfa_required ? "MFA aktif" : "MFA belum diaktifkan"}</h2><p>{user?.mfa_required ? "Login berikutnya membutuhkan kode Authenticator atau recovery code." : "Aktifkan autentikasi dua langkah sebelum sistem digunakan pada lingkungan production."}</p>{user?.mfa_required ? <Badge tone="success"><Check size={14} /> Akun terlindungi</Badge> : <button className="button primary" onClick={start} disabled={busy}><KeyRound />{busy ? "Menyiapkan…" : "Aktifkan Authenticator"}</button>}</div></article>{error && <Notice tone="error">{error}</Notice>}
-    {setup && <article className="panel setup-panel"><header><div><span className="eyebrow">Langkah 1</span><h2>Tambahkan ke Authenticator</h2></div></header><p>Masukkan kunci berikut secara manual pada Google Authenticator, Microsoft Authenticator, atau aplikasi TOTP lain.</p><div className="secret-box"><span>Kunci setup</span><code>{setup.secret}</code><button onClick={() => copy(setup.secret)}>{copied ? <Check /> : <Copy />}</button></div><form className="inline-confirm" onSubmit={confirm}><label className="field"><span>Kode enam digit</span><input inputMode="numeric" pattern="[0-9]{6}" data-field="code" value={code} onChange={(event) => setCode(event.target.value)} placeholder="000000" required /></label><button className="button primary" disabled={busy}>Verifikasi dan aktifkan</button></form></article>}
-    {recovery && <article className="panel recovery-panel"><header><div><span className="eyebrow">Langkah terakhir</span><h2>Simpan recovery code</h2></div></header><Notice tone="warning">Kode hanya ditampilkan sekali. Setiap kode hanya dapat dipakai satu kali.</Notice><div className="recovery-grid">{recovery.map((item) => <code key={item}>{item}</code>)}</div><button className="button secondary" onClick={() => copy(recovery.join("\n"))}>{copied ? <Check /> : <Copy />}{copied ? "Tersalin" : "Salin semua kode"}</button></article>}
+  return <section className="security-grid"><article className="panel security-overview"><span className="security-shield active"><ShieldCheck /></span><div><span className="eyebrow">Akun</span><h2>{user?.email}</h2><p>Masuk menggunakan email atau username dan kata sandi. Ganti kata sandi secara berkala dan jangan membagikannya.</p></div></article>
+    <article className="panel setup-panel"><header><div><span className="eyebrow">Kata sandi</span><h2>Ganti kata sandi</h2></div></header>{error && <Notice tone="error">{error}</Notice>}{done && <Notice tone="success">Kata sandi berhasil diganti.</Notice>}<form className="form-stack" onSubmit={submit}>
+      <label className="field"><span>Kata sandi saat ini</span><input type="password" autoComplete="current-password" data-field="current_password" value={currentPassword} onChange={(event) => setCurrentPassword(event.target.value)} required minLength={8} /></label>
+      <label className="field"><span>Kata sandi baru</span><input type="password" autoComplete="new-password" data-field="new_password" value={newPassword} onChange={(event) => setNewPassword(event.target.value)} required minLength={12} /><small>Minimal 12 karakter.</small></label>
+      <label className="field"><span>Ulangi kata sandi baru</span><input type="password" autoComplete="new-password" data-field="confirm_password" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} required minLength={12} /></label>
+      <button className="button primary" disabled={busy}><KeyRound />{busy ? "Menyimpan…" : "Simpan kata sandi"}</button>
+    </form></article>
   </section>;
 }

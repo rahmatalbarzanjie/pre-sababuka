@@ -3,9 +3,6 @@ import { createDatabase } from "../database.js";
 import { hashPassword } from "../security/password.js";
 
 const config = loadConfig();
-if (config.nodeEnv === "production") {
-  throw new Error("Bootstrap tanpa enrollment MFA tidak boleh dijalankan pada production.");
-}
 
 const email = process.env.SUPERADMIN_EMAIL?.trim();
 const fullName = process.env.SUPERADMIN_NAME?.trim();
@@ -67,11 +64,10 @@ try {
     `INSERT INTO sababuka.audit_events
        (actor_id, event_type, entity_type, entity_id, metadata)
      VALUES ($1, 'user.superadmin_bootstrapped', 'user', $1, $2::jsonb)`,
-    [userId, JSON.stringify({ environment: config.nodeEnv, mfa_enrollment_pending: true })],
+    [userId, JSON.stringify({ environment: config.nodeEnv })],
   );
   await client.query("COMMIT");
   console.log(`Akun Developer siap: ${email}`);
-  console.warn("MFA belum diaktifkan; akun ini tidak boleh digunakan pada production.");
 } catch (error) {
   await client.query("ROLLBACK");
   throw error;

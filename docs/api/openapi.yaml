@@ -23,7 +23,7 @@ tags:
   - name: System
     description: Kesehatan layanan dan konfigurasi sistem.
   - name: Authentication
-    description: Login, session, undangan, password, dan MFA.
+    description: Login, session, undangan, dan password.
   - name: Identity
     description: Organisasi, pengguna, role, permission, dan menu.
   - name: Governance
@@ -117,27 +117,11 @@ paths:
             application/json:
               schema: {$ref: "#/components/schemas/InvitationInfo"}
         "404": {$ref: "#/components/responses/NotFound"}
-  /auth/invitations/{token}/mfa/setup:
-    post:
-      tags: [Authentication]
-      operationId: setupInvitationMfa
-      summary: Membuat secret TOTP untuk pengguna undangan
-      security: []
-      parameters:
-        - $ref: "#/components/parameters/InvitationToken"
-      responses:
-        "200":
-          description: Secret dan URI provisioning Authenticator; hanya ditampilkan pada tahap ini
-          content:
-            application/json:
-              schema: {$ref: "#/components/schemas/TotpSetupResponse"}
-        "404": {$ref: "#/components/responses/NotFound"}
-        "429": {$ref: "#/components/responses/RateLimited"}
   /auth/invitations/{token}/accept:
     post:
       tags: [Authentication]
       operationId: acceptInvitation
-      summary: Mengaktifkan akun dengan password dan verifikasi TOTP
+      summary: Mengaktifkan akun dengan membuat password
       security: []
       parameters:
         - $ref: "#/components/parameters/InvitationToken"
@@ -148,7 +132,7 @@ paths:
             schema: {$ref: "#/components/schemas/InvitationAcceptInput"}
       responses:
         "200":
-          description: Akun aktif; recovery code hanya dikirim sekali
+          description: Akun aktif atau menunggu persetujuan pendaftaran
           content:
             application/json:
               schema: {$ref: "#/components/schemas/InvitationAcceptResponse"}
@@ -188,42 +172,6 @@ paths:
                     type: array
                     items: {$ref: "#/components/schemas/MenuItem"}
         "401": {$ref: "#/components/responses/Unauthorized"}
-  /me/mfa/totp/setup:
-    post:
-      tags: [Authentication]
-      operationId: setupCurrentUserMfa
-      summary: Memulai enrollment TOTP untuk pengguna aktif
-      parameters:
-        - $ref: "#/components/parameters/CsrfToken"
-      responses:
-        "200":
-          description: Secret dan URI provisioning Authenticator
-          content:
-            application/json:
-              schema: {$ref: "#/components/schemas/TotpSetupResponse"}
-        "401": {$ref: "#/components/responses/Unauthorized"}
-        "409": {$ref: "#/components/responses/Conflict"}
-  /me/mfa/totp/confirm:
-    post:
-      tags: [Authentication]
-      operationId: confirmCurrentUserMfa
-      summary: Memverifikasi enrollment TOTP dan menghasilkan recovery code
-      parameters:
-        - $ref: "#/components/parameters/CsrfToken"
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema: {$ref: "#/components/schemas/MfaConfirmInput"}
-      responses:
-        "200":
-          description: MFA aktif; recovery code hanya dikirim sekali
-          content:
-            application/json:
-              schema: {$ref: "#/components/schemas/RecoveryCodesResponse"}
-        "400": {$ref: "#/components/responses/ValidationError"}
-        "401": {$ref: "#/components/responses/Unauthorized"}
-        "404": {$ref: "#/components/responses/NotFound"}
   /organizations:
     get:
       tags: [Identity]
@@ -337,7 +285,7 @@ paths:
     patch:
       tags: [Identity]
       operationId: updateUser
-      summary: Mengubah profil, status, atau kewajiban MFA pengguna
+      summary: Mengubah profil atau status pengguna
       description: Membutuhkan `user.update`; perubahan status membutuhkan `user.activate`.
       parameters:
         - $ref: "#/components/parameters/UserId"
@@ -1846,13 +1794,10 @@ components:
     LoginRequest:
       type: object
       additionalProperties: false
-      description: "mfa_code dan recovery_code saling eksklusif; kirim salah satu ketika akun mewajibkan MFA."
       required: [identifier, password]
       properties:
         identifier: {type: string, minLength: 3, maxLength: 255}
         password: {type: string, minLength: 8, maxLength: 256, writeOnly: true}
-        mfa_code: {type: string, pattern: "^[0-9]{6}$", writeOnly: true}
-        recovery_code: {type: string, pattern: "^[A-Za-z0-9-]{16,32}$", writeOnly: true}
     SessionResponse:
       type: object
       required: [user, csrf_token, expires_at]
@@ -1862,51 +1807,23 @@ components:
         expires_at: {$ref: "#/components/schemas/Timestamp"}
     InvitationInfo:
       type: object
-      required: [email, full_name, expires_at, mfa_setup_started]
+      required: [email, full_name, expires_at]
       properties:
         email: {type: string, format: email}
         full_name: {type: string}
         expires_at: {$ref: "#/components/schemas/Timestamp"}
-        mfa_setup_started: {type: boolean}
-    TotpSetupResponse:
-      type: object
-      required: [secret, provisioning_uri, issuer, account]
-      properties:
-        secret: {type: string, pattern: "^[A-Z2-7]+$", description: Nilai sensitif yang hanya ditampilkan saat enrollment.}
-        provisioning_uri: {type: string, pattern: "^otpauth://totp/"}
-        issuer: {type: string}
-        account: {type: string}
     InvitationAcceptInput:
       type: object
       additionalProperties: false
-      required: [password, mfa_code]
+      required: [password]
       properties:
         password: {type: string, minLength: 12, maxLength: 256, writeOnly: true}
-        mfa_code: {type: string, pattern: "^[0-9]{6}$", writeOnly: true}
-    MfaConfirmInput:
-      type: object
-      additionalProperties: false
-      required: [mfa_code]
-      properties:
-        mfa_code: {type: string, pattern: "^[0-9]{6}$", writeOnly: true}
-    RecoveryCodesResponse:
-      type: object
-      required: [recovery_codes]
-      properties:
-        recovery_codes:
-          type: array
-          minItems: 8
-          maxItems: 8
-          uniqueItems: true
-          items: {type: string, pattern: "^[A-F0-9]{4}(?:-[A-F0-9]{4}){3}$"}
     InvitationAcceptResponse:
-      allOf:
-        - $ref: "#/components/schemas/RecoveryCodesResponse"
-        - type: object
-          required: [email, status]
-          properties:
-            email: {type: string, format: email}
-            status: {type: string, const: active}
+      type: object
+      required: [email, status]
+      properties:
+        email: {type: string, format: email}
+        status: {type: string, enum: [active, pending_approval]}
     CurrentUser:
       type: object
       required: [id, email, full_name, mfa_required, must_change_password, roles, permissions, organizations]

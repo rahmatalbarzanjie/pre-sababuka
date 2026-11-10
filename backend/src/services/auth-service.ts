@@ -1,7 +1,6 @@
 import type { AppConfig } from "../config.js";
 import type { Database, QueryResultRow } from "../database.js";
 import { ApiError } from "../errors.js";
-import { decryptMfaSecret, hashRecoveryCode, verifyTotp } from "../security/mfa.js";
 import { hashPassword, verifyPassword } from "../security/password.js";
 import { hashToken, randomToken } from "../security/tokens.js";
 import type {
@@ -52,8 +51,6 @@ interface MenuRow extends QueryResultRow {
 export interface LoginInput {
   identifier: string;
   password: string;
-  mfaCode?: string | undefined;
-  recoveryCode?: string | undefined;
   ipAddress: string | null;
   userAgent: string | null;
   requestId: string;
@@ -125,18 +122,6 @@ export class AuthService {
     if (!passwordValid) {
       await this.recordLoginFailure(user, input, "invalid_password");
       return null;
-    }
-
-    if (user.mfa_required) {
-      if (!input.mfaCode && !input.recoveryCode) {
-        await this.auditFailedLogin(user.id, input, "mfa_required");
-        throw new ApiError(401, "MFA_REQUIRED", "Kode MFA diperlukan.");
-      }
-      const mfaValid = await this.verifyLoginMfa(user.id, input.mfaCode, input.recoveryCode);
-      if (!mfaValid) {
-        await this.recordLoginFailure(user, input, "invalid_mfa");
-        throw new ApiError(401, "MFA_INVALID", "Kode MFA tidak valid.");
-      }
     }
 
     const sessionToken = randomToken();
@@ -432,98 +417,6 @@ export class AuthService {
     const sortItems = (entries: EffectiveMenuItem[]): void => { entries.sort((a, b) => a.display_order - b.display_order || a.label.localeCompare(b.label, "id")); for (const entry of entries) sortItems(entry.children); };
     sortItems(roots);
     return roots;
-  }
-
-  private async verifyLoginMfa(
-    userId: string,
-    mfaCode?: string,
-    recoveryCode?: string,
-  ): Promise<boolean> {
-    const client = await this.db.connect();
-    try {
-      await client.query("BEGIN");
-      if (mfaCode) {
-        if (!this.config.mfaEncryptionKey) {
-          throw new ApiError(503, "INTERNAL_ERROR", "Konfigurasi enkripsi MFA belum tersedia.");
-        }
-        const result = await client.query<{
-          id: string;
-          encrypted_secret: Buffer;
-          last_used_counter: string | null;
-        }>(
-          `SELECT id::text, encrypted_secret, last_used_counter::text
-           FROM sababuka.user_mfa_methods
-           WHERE user_id = $1 AND method_type = 'totp'
-             AND verified_at IS NOT NULL AND disabled_at IS NULL
-           ORDER BY is_primary DESC, verified_at DESC LIMIT 1 FOR UPDATE`,
-          [userId],
-        );
-        const method = result.rows[0];
-        if (!method) {
-          await client.query("ROLLBACK");
-          return false;
-        }
-        const counter = verifyTotp(
-          decryptMfaSecret(method.encrypted_secret, this.config.mfaEncryptionKey),
-          mfaCode,
-          { afterCounter: method.last_used_counter === null ? null : Number(method.last_used_counter) },
-        );
-        if (counter === null) {
-          await client.query("ROLLBACK");
-          return false;
-        }
-        await client.query(
-          `UPDATE sababuka.user_mfa_methods SET last_used_counter = $2 WHERE id = $1`,
-          [method.id, counter],
-        );
-        await client.query("COMMIT");
-        return true;
-      }
-
-      if (recoveryCode) {
-        const result = await client.query<{
-          id: string;
-          credential_data: { hashes?: string[] };
-        }>(
-          `SELECT id::text, credential_data
-           FROM sababuka.user_mfa_methods
-           WHERE user_id = $1 AND method_type = 'recovery_codes'
-             AND verified_at IS NOT NULL AND disabled_at IS NULL
-           ORDER BY verified_at DESC LIMIT 1 FOR UPDATE`,
-          [userId],
-        );
-        const method = result.rows[0];
-        const hashes = method?.credential_data.hashes ?? [];
-        const submittedHash = hashRecoveryCode(recoveryCode);
-        const index = hashes.indexOf(submittedHash);
-        if (!method || index < 0) {
-          await client.query("ROLLBACK");
-          return false;
-        }
-        const remaining = hashes.filter((_, currentIndex) => currentIndex !== index);
-        await client.query(
-          `UPDATE sababuka.user_mfa_methods
-           SET credential_data = $2::jsonb,
-               disabled_at = CASE WHEN cardinality($3::text[]) = 0 THEN now() ELSE disabled_at END
-           WHERE id = $1`,
-          [method.id, JSON.stringify({ hashes: remaining }), remaining],
-        );
-        await client.query("COMMIT");
-        return true;
-      }
-
-      await client.query("ROLLBACK");
-      return false;
-    } catch (error) {
-      try {
-        await client.query("ROLLBACK");
-      } catch {
-        // Preserve the original error.
-      }
-      throw error;
-    } finally {
-      client.release();
-    }
   }
 
   private async recordLoginFailure(user: UserRow, input: LoginInput, reason: string): Promise<void> {

@@ -14,7 +14,7 @@ const PUBLIC_PATHS = new Set([
 
 function isPublicRequest(request: FastifyRequest): boolean {
   const path = request.url.split("?", 1)[0]!;
-  return PUBLIC_PATHS.has(path) || /^\/api\/v1\/auth\/invitations\/[^/]+(?:\/mfa\/setup|\/accept)?$/u.test(path);
+  return PUBLIC_PATHS.has(path) || /^\/api\/v1\/auth\/invitations\/[^/]+(?:\/accept)?$/u.test(path);
 }
 
 export function authService(request: FastifyRequest): AuthService {
