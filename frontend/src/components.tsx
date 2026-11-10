@@ -127,8 +127,12 @@ export function Modal({ title, onClose, children, wide = false, className = "" }
   </div>;
 }
 
+export function RowLink({ onOpen, label, children }: { onOpen(): void; label: string; children: ReactNode }) {
+  return <button type="button" className="row-link" aria-label={label} onClick={(event) => { event.stopPropagation(); onOpen(); }} onKeyDown={(event) => event.stopPropagation()}>{children}</button>;
+}
+
 export function Notice({ tone, children }: { tone: "error" | "success" | "warning" | "info"; children: ReactNode | Error }) {
-  const Icon = tone === "success" ? CheckCircle2 : AlertTriangle;
+  const Icon = tone === "success" ? CheckCircle2 : tone === "info" ? Info : AlertTriangle;
   return <div className={`notice ${tone}`} role={tone === "error" ? "alert" : "status"} aria-live="polite"><Icon size={18} aria-hidden /><div>{children instanceof Error ? children.message : children}</div></div>;
 }
 

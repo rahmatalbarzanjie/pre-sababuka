@@ -1168,3 +1168,19 @@ html[data-theme="dark"] :is(input, select, textarea)[aria-invalid="true"] {
 .consolidation-summary > div { padding: 4px 4px 0; }
 .consolidation-decision, .consolidation-form { padding: 12px 16px 16px; }
 .consolidation-card > .notice { margin: 12px 16px 16px; }
+
+/* Audit alur per peran (2026-11-11) */
+.sidebar-lockup .sababuka-lockup-copy small { white-space: normal; overflow: visible; text-overflow: clip; max-width: 150px; }
+.metric-grid.five { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.task-home > header { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px 20px; }
+.task-next { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.task-next > span { color: var(--ui-muted); font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
+@media (max-width: 1100px) {
+  .metric-grid.five { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .metric-grid.five .metric-card:nth-child(5) { grid-column: 1 / -1; border-right: 0; }
+}
+
+/* Judul baris yang dapat diklik (membuka detail) */
+.row-link { display: block; max-width: 100%; margin: 0; padding: 0; border: 0; background: none; color: inherit; font: inherit; font-weight: 700; text-align: left; cursor: pointer; text-decoration: none; }
+.row-link:hover { color: var(--ui-primary); text-decoration: underline; text-underline-offset: 3px; }
+.row-link:focus-visible { outline: 3px solid color-mix(in srgb, var(--ui-primary) 40%, transparent); outline-offset: 2px; border-radius: 3px; }
