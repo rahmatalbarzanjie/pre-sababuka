@@ -76,7 +76,7 @@ const iconByCode: Record<string, typeof LayoutDashboard> = {
   "opd-monitoring": Building2,
 };
 
-const supportedRoutes = new Set(["/admin", "/dashboard", "/executive", "/assistant", "/analysis", "/finance", "/public-services", "/notifications", "/audit", "/operations", "/opd-profile", "/admin/organizations", "/admin/opd-monitoring", "/admin/users", "/admin/roles", "/admin/menus", "/admin/system", "/admin/metadata-profiles", "/governance/focuses", "/governance/categories", "/governance/indicators", "/governance/datasets", "/submissions", "/reviews", "/guidance", "/publications", "/connectors"]);
+const supportedRoutes = new Set(["/admin", "/dashboard", "/executive", "/assistant", "/analysis", "/finance", "/public-services", "/notifications", "/audit", "/operations", "/opd-profile", "/admin/organizations", "/admin/opd-monitoring", "/admin/users", "/admin/roles", "/admin/menus", "/admin/system", "/admin/metadata-profiles", "/governance/focuses", "/governance/categories", "/governance/indicators", "/governance/datasets", "/submissions", "/reviews", "/guidance", "/publications", "/connectors", "/consolidation"]);
 
 const roleLabels: Record<string, string> = {
   superadmin: "Pengelola Sistem",
@@ -125,6 +125,8 @@ export function AdminLayout({ pathname, title, subtitle, actions, children }: { 
   const primaryEntries = useMemo(() => menu.filter((item) => item.code === "dashboard" && item.route_name && supportedRoutes.has(item.route_name)), [menu]);
   const systemEntries = useMemo(() => menu.filter((item) => ["system-dashboard", "opd-monitoring"].includes(item.code) && item.route_name && supportedRoutes.has(item.route_name)), [menu]);
   const analysisEntries = useMemo(() => menu.filter((item) => ["analysis", "finance", "public-services"].includes(item.code) && item.route_name && supportedRoutes.has(item.route_name)), [menu]);
+  const consolidationEntries = useMemo(() => menu.filter((item) => item.code === "consolidation" && item.route_name && supportedRoutes.has(item.route_name)), [menu]);
+  const guidanceEntries = useMemo(() => menu.filter((item) => item.code === "statistical-guidance" && item.route_name && supportedRoutes.has(item.route_name)), [menu]);
   const auditEntries = useMemo(() => menu.filter((item) => item.code === "audit" && item.route_name && supportedRoutes.has(item.route_name)), [menu]);
   const isPimpinan = user?.roles.some((role) => role.code === "pimpinan") ?? false;
   const navigationSections = useMemo(() => [
@@ -134,9 +136,11 @@ export function AdminLayout({ pathname, title, subtitle, actions, children }: { 
     { code: "governance", label: "Tata kelola data", entries: governanceEntries },
     { code: "sources", label: "Walidata", entries: sourceEntries },
     { code: "operations", label: isPimpinan ? "Rilis resmi" : isBapperida && !isSuperadmin ? "Pelaporan dan publikasi" : "Pelaporan capaian", entries: operationalEntries },
+    { code: "consolidation", label: "Konsolidasi sumber", entries: consolidationEntries },
+    { code: "guidance", label: "Pembinaan statistik", entries: guidanceEntries },
     { code: "audit", label: "Pengawasan", entries: auditEntries },
     { code: "administration", label: "Konfigurasi internal", entries: adminEntries },
-  ].filter((section) => section.entries.length > 0).sort((a, b) => Math.min(...a.entries.map((entry) => entry.display_order)) - Math.min(...b.entries.map((entry) => entry.display_order))), [adminEntries, analysisEntries, auditEntries, governanceEntries, isBapperida, isPimpinan, isSuperadmin, operationalEntries, primaryEntries, sourceEntries, systemEntries]);
+  ].filter((section) => section.entries.length > 0).sort((a, b) => Math.min(...a.entries.map((entry) => entry.display_order)) - Math.min(...b.entries.map((entry) => entry.display_order))), [adminEntries, analysisEntries, auditEntries, consolidationEntries, guidanceEntries, governanceEntries, isBapperida, isPimpinan, isSuperadmin, operationalEntries, primaryEntries, sourceEntries, systemEntries]);
   const areaLabel = ["/admin", "/admin/opd-monitoring"].includes(pathname) ? "Administrasi Sistem"
     : pathname.startsWith("/admin") ? "Konfigurasi Internal"
     : ["/dashboard", "/executive", "/assistant"].includes(pathname) ? "Ruang Pimpinan"

@@ -1179,3 +1179,8 @@ html[data-theme="dark"] :is(input, select, textarea)[aria-invalid="true"] {
   .metric-grid.five { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .metric-grid.five .metric-card:nth-child(5) { grid-column: 1 / -1; border-right: 0; }
 }
+
+/* Judul baris yang dapat diklik (membuka detail) */
+.row-link { display: block; max-width: 100%; margin: 0; padding: 0; border: 0; background: none; color: inherit; font: inherit; font-weight: 700; text-align: left; cursor: pointer; text-decoration: none; }
+.row-link:hover { color: var(--ui-primary); text-decoration: underline; text-underline-offset: 3px; }
+.row-link:focus-visible { outline: 3px solid color-mix(in srgb, var(--ui-primary) 40%, transparent); outline-offset: 2px; border-radius: 3px; }

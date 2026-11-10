@@ -2,7 +2,7 @@ import { BadgeCheck, BookCheck, CheckCircle2, ClipboardList, Download, FileCheck
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { api, apiPath, jsonBody } from "../api";
 import { useAuth } from "../auth";
-import { Badge, capaianStatusLabel, EmptyState, ErrorState, formatDate, formatDateOnly, formatTanggal, Modal, Notice, PageSizeControl, Pagination, SortableHeader, Spinner, useAsync, type SortDirection, type StatusViewpoint } from "../components";
+import { Badge, capaianStatusLabel, RowLink, EmptyState, ErrorState, formatDate, formatDateOnly, formatTanggal, Modal, Notice, PageSizeControl, Pagination, SortableHeader, Spinner, useAsync, type SortDirection, type StatusViewpoint } from "../components";
 import { navigate } from "../router";
 import type { Organization, PageResponse, Period, StatisticalGuidanceNote, Submission, SubmissionEvidence, SubmissionObservation } from "../types";
 
@@ -62,7 +62,7 @@ export function SubmissionsPage({ review = false, guidance = false }: { review?:
         : !submissions.data?.data.length ? <EmptyState title={`Tidak ada capaian berstatus ${status ? capaianStatusLabel(status, statusViewpoint) : "pada daftar ini"}`}>{status ? "Pilih status lain untuk melihat pekerjaan yang sudah atau belum diproses." : review ? "Pengiriman OPD akan tampil setelah diajukan." : guidance ? "Pelaporan instansi akan tampil untuk pembinaan setelah tersedia." : "Mulai pelaporan berdasarkan instansi dan periode."}</EmptyState>
         : <><div className="table-scroll submission-desktop-table"><table><thead><tr><SortableHeader label="OPD" column="organization" sortBy={sortBy} direction={sortOrder} onSort={changeSort} /><SortableHeader label="Periode" column="period" sortBy={sortBy} direction={sortOrder} onSort={changeSort} /><SortableHeader label="Kelengkapan" column="row_count" sortBy={sortBy} direction={sortOrder} onSort={changeSort} /><SortableHeader label="Diperbarui" column="updated_at" sortBy={sortBy} direction={sortOrder} onSort={changeSort} /><SortableHeader label="Status" column="status" sortBy={sortBy} direction={sortOrder} onSort={changeSort} /></tr></thead><tbody>
           {submissions.data.data.map((item) => <tr key={item.id} className="clickable-row" tabIndex={0} aria-label={`Buka capaian ${item.organization_name}`} onClick={() => setSelectedId(item.id)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); setSelectedId(item.id); } }}>
-            <td><div className="identity-cell"><span className="table-icon"><ClipboardList /></span><span><strong>{item.organization_name}</strong><small>{item.organization_code}</small></span></div></td>
+            <td><div className="identity-cell"><span className="table-icon"><ClipboardList /></span><span><RowLink label={`Buka capaian ${item.organization_name} ${item.period_label ?? ""}`} onOpen={() => setSelectedId(item.id)}>{item.organization_name}</RowLink><small>{item.organization_code} · dibuat {formatDateOnly(item.created_at)} · #{item.id.slice(0, 4)}</small></span></div></td>
             <td><strong>{item.period_label ?? "-"}</strong><small className="table-subtitle">{frequencyLabel(item.period_type)}</small></td><td>{item.row_count}/{item.indicator_count ?? 0} indikator</td>
             <td>{formatDate(item.updated_at)}</td>
             <td><Badge tone={item.status === "approved" ? "success" : item.status === "returned" ? "warning" : "neutral"}>{capaianStatusLabel(item.status, statusViewpoint)}</Badge></td>
