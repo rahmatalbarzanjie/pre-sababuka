@@ -39,7 +39,7 @@ Untuk setiap OPD diperlukan:
 
 - [ ] Daftar role dan matriks permission.
 - [ ] Pilihan login lokal, SSO, atau identitas pemerintah.
-- [ ] Kebijakan MFA, sesi, reset akses, dan offboarding.
+- [ ] Kebijakan sesi, reset akses, dan offboarding. (MFA dihapus per 10 Nov 2026; login memakai kata sandi.)
 - [ ] Daftar pengguna uji tanpa memakai akun produksi bersama.
 
 ## WhatsApp dan AI
