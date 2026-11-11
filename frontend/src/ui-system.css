@@ -1229,3 +1229,11 @@ input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 3px
   .button, .button.secondary, .button.compact { min-height: 44px; }
   input[type="checkbox"], input[type="radio"] { flex: 0 0 24px; }
 }
+
+/* Jarak vertikal konsisten antar kartu/blok (audit jarak 2026-11-11).
+   Margin vertikal saling melebur, jadi aturan ini hanya menambah jarak yang terlalu rapat. */
+.page-shell > * + *:not(.role-preview-banner):not(.skip-link) { margin-top: 16px; }
+.panel > .notice + *, .panel > * + .notice, details.panel > .notice + *, details.panel > * + .notice { margin-top: 12px; }
+.panel > .panel-heading + .opd-source-summary,
+.panel > .panel-heading + .summary-grid,
+.panel > .panel-heading + .metric-grid { margin-top: 12px; }
