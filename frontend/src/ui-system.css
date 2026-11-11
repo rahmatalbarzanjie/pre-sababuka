@@ -1184,3 +1184,30 @@ html[data-theme="dark"] :is(input, select, textarea)[aria-invalid="true"] {
 .row-link { display: block; max-width: 100%; margin: 0; padding: 0; border: 0; background: none; color: inherit; font: inherit; font-weight: 700; text-align: left; cursor: pointer; text-decoration: none; }
 .row-link:hover { color: var(--ui-primary); text-decoration: underline; text-underline-offset: 3px; }
 .row-link:focus-visible { outline: 3px solid color-mix(in srgb, var(--ui-primary) 40%, transparent); outline-offset: 2px; border-radius: 3px; }
+
+/* Beranda Tugas: sorot kartu berisi pekerjaan, redam kartu kosong */
+.task-card.has-work { border-color: var(--ui-primary); background: var(--ui-primary-soft); box-shadow: inset 3px 0 0 var(--ui-primary); }
+.task-card.has-work strong { color: var(--ui-primary-strong); }
+.task-card.is-empty strong { color: var(--ui-muted); font-weight: 600; }
+html[data-theme="dark"] .task-card.has-work strong { color: var(--ui-text); }
+
+/* Tabel status pelaporan di beranda: muat tanpa terpotong */
+.operations-grid .table-scroll th, .operations-grid .table-scroll td { padding-inline: 10px; }
+.operations-grid .table-scroll th { white-space: normal; line-height: 1.25; }
+
+/* Banner pratinjau di layar sempit: teks boleh turun baris */
+@media (max-width: 720px) {
+  .role-preview-banner { flex-wrap: wrap; row-gap: 8px; }
+  .role-preview-banner > span { flex: 1 1 calc(100% - 31px); }
+  .role-preview-banner small { max-width: none; white-space: normal; overflow: visible; text-overflow: clip; }
+  .role-preview-banner button { flex: 0 0 auto; margin-left: 31px; }
+}
+
+/* Banner pratinjau di mode gelap (sebelumnya berlatar terang dengan teks tak terbaca) */
+html[data-theme="dark"] .role-preview-banner { background: var(--ui-surface-subtle); border-bottom-color: var(--ui-border); color: var(--ui-text); }
+html[data-theme="dark"] .role-preview-banner > svg { color: var(--ui-accent); }
+html[data-theme="dark"] .role-preview-banner small { color: var(--ui-muted); }
+html[data-theme="dark"] .role-preview-banner button { background: var(--ui-surface); border-color: var(--ui-border); color: var(--ui-text); }
+
+/* Panel status pelaporan lebih lebar agar tabel tidak terpotong */
+@media (min-width: 1101px) { .operations-grid { grid-template-columns: minmax(0, 1.75fr) minmax(300px, .6fr); } }
