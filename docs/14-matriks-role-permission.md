@@ -68,4 +68,4 @@ Permission tidak pernah menggantikan scope. Contoh: `submission.update` pada rol
 
 ## 5. Akun darurat
 
-Akun pemulihan Superadmin harus terpisah dari akun harian, memakai MFA, tidak dipakai untuk pekerjaan rutin, dan setiap penggunaannya menghasilkan audit prioritas tinggi.
+Akun pemulihan Superadmin harus terpisah dari akun harian, memakai kata sandi kuat yang unik, tidak dipakai untuk pekerjaan rutin, dan setiap penggunaannya menghasilkan audit prioritas tinggi.

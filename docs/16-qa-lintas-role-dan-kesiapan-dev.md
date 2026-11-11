@@ -49,7 +49,7 @@ Dashboard operasional memakai permission `submission.view` dan selalu memfilter 
 | Audit dependency produksi backend | Tidak ditemukan vulnerability yang diketahui |
 | Audit dependency produksi frontend | Tidak ditemukan vulnerability yang diketahui |
 
-Skenario integration mencakup administrasi Superadmin, login/session/menu/logout, undangan dan MFA, master kategori/indikator, workflow form capaian, serta permission dan scope lintas lima role.
+Skenario integration mencakup administrasi Superadmin, login/session/menu/logout, undangan dan aktivasi kata sandi, master kategori/indikator, workflow form capaian, serta permission dan scope lintas lima role.
 
 ## 5. Temuan yang diperbaiki dalam QA
 

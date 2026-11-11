@@ -52,6 +52,7 @@ Untuk pengembangan lokal, jalankan `pnpm dev` masing-masing dari `backend/` dan 
 - Perubahan database harus berupa migration baru, didahului backup, aman dijalankan ulang bila memungkinkan, dan diverifikasi setelah diterapkan.
 - OPD mengusulkan dan mengisi indikator secara manual; jangan mengubahnya menjadi auto-generate atau semiotomatis tanpa keputusan produk baru.
 - Data pimpinan hanya boleh berasal dari data yang disetujui dan dipublikasikan. Pertahankan RBAC, pemisahan kewenangan, provenance, dan audit trail.
+- Autentikasi hanya email/username dan kata sandi. MFA (TOTP/recovery code) sengaja dihapus atas keputusan pemilik (10 Nov 2026, migration 057); jangan menambahkannya kembali tanpa permintaan pemilik.
 - Nilai beda antarsumber tidak pernah dipilih otomatis: ditandai konflik, ditetapkan BAPPERIDA/OPD pemilik (menu Konsolidasi Sumber); nilai identik dari sumber berbeda tetap dua baris bersumber (lihat `docs/external-connectors.md`).
 - Jangan commit secret, dump database, hasil ekspor privat, cache audit, atau artefak build.
 - Perubahan UI wajib menjaga aksesibilitas, state loading/empty/error, serta diuji pada desktop, tablet, dan mobile.

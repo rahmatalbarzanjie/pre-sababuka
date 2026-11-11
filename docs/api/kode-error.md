@@ -6,8 +6,6 @@
 | 400 | `INVALID_TRANSITION` | Transisi workflow tidak diizinkan dari status saat ini |
 | 401 | `AUTH_REQUIRED` | Sesi tidak tersedia atau kedaluwarsa |
 | 401 | `INVALID_CREDENTIALS` | Kredensial login salah |
-| 401 | `MFA_REQUIRED` | Password benar dan akun mewajibkan kode MFA |
-| 401 | `MFA_INVALID` | Kode TOTP atau recovery code tidak valid/sudah dipakai |
 | 403 | `PERMISSION_DENIED` | Permission tidak dimiliki |
 | 403 | `SCOPE_DENIED` | Objek berada di luar lingkup organisasi pengguna |
 | 404 | `NOT_FOUND` | Objek tidak ditemukan atau tidak boleh diungkapkan |
