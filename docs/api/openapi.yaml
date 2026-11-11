@@ -281,6 +281,24 @@ paths:
         "400": {$ref: "#/components/responses/ValidationError"}
         "403": {$ref: "#/components/responses/Forbidden"}
         "404": {$ref: "#/components/responses/NotFound"}
+  /users/{user_id}/password-reset:
+    post:
+      tags: [Identity]
+      operationId: issuePasswordReset
+      summary: Menerbitkan tautan atur ulang kata sandi
+      description: "Hanya Superadmin (membutuhkan `user.update`). Akun aktif menerima tautan atur ulang (`purpose: password_reset`); akun yang menunggu aktivasi menerima undangan baru. Tautan sebelumnya yang belum dipakai dicabut, berlaku sekali pakai, dan sesi aktif pengguna dicabut saat kata sandi diganti."
+      parameters:
+        - $ref: "#/components/parameters/UserId"
+        - $ref: "#/components/parameters/CsrfToken"
+      responses:
+        "201":
+          description: Tautan diterbitkan; token hanya ditampilkan sekali
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/PasswordResetIssued"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+        "404": {$ref: "#/components/responses/NotFound"}
+        "409": {description: Akun tidak aktif atau ditangguhkan}
   /users/{user_id}:
     patch:
       tags: [Identity]
@@ -1807,11 +1825,22 @@ components:
         expires_at: {$ref: "#/components/schemas/Timestamp"}
     InvitationInfo:
       type: object
-      required: [email, full_name, expires_at]
+      required: [email, full_name, expires_at, purpose]
       properties:
         email: {type: string, format: email}
         full_name: {type: string}
         expires_at: {$ref: "#/components/schemas/Timestamp"}
+        purpose: {type: string, enum: [invitation, password_reset]}
+    PasswordResetIssued:
+      type: object
+      required: [user_id, email, full_name, purpose, invitation_token, invitation_expires_at]
+      properties:
+        user_id: {type: string, format: uuid}
+        email: {type: string, format: email}
+        full_name: {type: string}
+        purpose: {type: string, enum: [invitation, password_reset]}
+        invitation_token: {type: string, writeOnly: true}
+        invitation_expires_at: {$ref: "#/components/schemas/Timestamp"}
     InvitationAcceptInput:
       type: object
       additionalProperties: false

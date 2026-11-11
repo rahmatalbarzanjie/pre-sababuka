@@ -191,6 +191,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/users/{user_id}/password-reset": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Menerbitkan tautan atur ulang kata sandi
+         * @description Hanya Superadmin (membutuhkan `user.update`). Akun aktif menerima tautan atur ulang (`purpose: password_reset`); akun yang menunggu aktivasi menerima undangan baru. Tautan sebelumnya yang belum dipakai dicabut, berlaku sekali pakai, dan sesi aktif pengguna dicabut saat kata sandi diganti.
+         */
+        post: operations["issuePasswordReset"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/users/{user_id}": {
         parameters: {
             query?: never;
@@ -1438,6 +1458,19 @@ export interface components {
             email: string;
             full_name: string;
             expires_at: components["schemas"]["Timestamp"];
+            /** @enum {string} */
+            purpose: "invitation" | "password_reset";
+        };
+        PasswordResetIssued: {
+            /** Format: uuid */
+            user_id: string;
+            /** Format: email */
+            email: string;
+            full_name: string;
+            /** @enum {string} */
+            purpose: "invitation" | "password_reset";
+            invitation_token: string;
+            invitation_expires_at: components["schemas"]["Timestamp"];
         };
         InvitationAcceptInput: {
             password: string;
@@ -2438,6 +2471,40 @@ export interface operations {
             400: components["responses"]["ValidationError"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+        };
+    };
+    issuePasswordReset: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Token CSRF terikat ke sesi untuk seluruh operasi mutasi. */
+                "X-CSRF-Token": components["parameters"]["CsrfToken"];
+            };
+            path: {
+                user_id: components["parameters"]["UserId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Tautan diterbitkan; token hanya ditampilkan sekali */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PasswordResetIssued"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description Akun tidak aktif atau ditangguhkan */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
         };
     };
     updateUser: {

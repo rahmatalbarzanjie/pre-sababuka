@@ -1,5 +1,5 @@
 import type { FastifyInstance, FastifyRequest } from "fastify";
-import { requireCsrf, requirePermission } from "../plugins/authentication.js";
+import { requireCsrf, requirePermission, requireSuperadmin } from "../plugins/authentication.js";
 import { requestAuditContext } from "../request-context.js";
 import {
   AdminService,
@@ -220,6 +220,21 @@ export async function administrationRoutes(app: FastifyInstance): Promise<void> 
       mutate(request, "user.activate");
       await service(request).archiveUser(request.auth!, request.params.user_id, requestAuditContext(request));
       return reply.code(204).send();
+    },
+  );
+
+  app.post<{ Params: { user_id: string } }>(
+    "/users/:user_id/password-reset",
+    {
+      schema: {
+        params: { type: "object", additionalProperties: false, required: ["user_id"], properties: { user_id: uuid } },
+      },
+    },
+    async (request, reply) => {
+      mutate(request, "user.update");
+      requireSuperadmin(request);
+      const result = await service(request).issuePasswordReset(request.auth!, request.params.user_id, requestAuditContext(request));
+      return reply.code(201).send(result);
     },
   );
 

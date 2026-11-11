@@ -107,3 +107,71 @@ test(
     }
   },
 );
+
+test(
+  "Superadmin menerbitkan tautan atur ulang; kata sandi baru berlaku, sesi lama dicabut, tautan sekali pakai",
+  { skip: !databaseUrl },
+  async () => {
+    const stamp = Date.now();
+    const db = createDatabase(databaseUrl!);
+    const app = await buildApp({ config: { ...testConfig, databaseUrl: databaseUrl! }, db, logger: false });
+    try {
+      const adminLogin = await app.inject({ method: "POST", url: "/api/v1/auth/login", payload: { identifier: adminEmail, password: adminPassword } });
+      assert.equal(adminLogin.statusCode, 200, adminLogin.body);
+      const adminCookie = String(adminLogin.headers["set-cookie"]).split(";", 1)[0]!;
+      const adminHeaders = { cookie: adminCookie, "x-csrf-token": adminLogin.json().csrf_token };
+
+      const organization = await app.inject({ method: "POST", url: "/api/v1/organizations", headers: adminHeaders, payload: { code: `RESET_TEST_${stamp}`, name: `Reset Integration OPD ${stamp}`, organization_type: "opd" } });
+      assert.equal(organization.statusCode, 201, organization.body);
+      const organizationId = organization.json().id as string;
+      const email = `reset.${stamp}@sababuka.test`;
+      const invited = await app.inject({ method: "POST", url: "/api/v1/users", headers: adminHeaders, payload: { email, full_name: "Pengguna Reset Integration", organization_id: organizationId } });
+      assert.equal(invited.statusCode, 201, invited.body);
+      const userId = invited.json().id as string;
+      const roles = await app.inject({ method: "GET", url: "/api/v1/roles", headers: { cookie: adminCookie } });
+      const opdRole = roles.json().data.find((role: { code: string }) => role.code === "opd");
+      const assignment = await app.inject({ method: "POST", url: `/api/v1/users/${userId}/role-assignments`, headers: adminHeaders, payload: { role_id: opdRole.id, scope_type: "organization", organization_id: organizationId } });
+      assert.equal(assignment.statusCode, 201, assignment.body);
+      const firstPassword = "Reset-Integration-Sandi-Awal-2026!";
+      const accepted = await app.inject({ method: "POST", url: `/api/v1/auth/invitations/${invited.json().invitation_token}/accept`, payload: { password: firstPassword } });
+      assert.equal(accepted.statusCode, 200, accepted.body);
+
+      const oldLogin = await app.inject({ method: "POST", url: "/api/v1/auth/login", payload: { identifier: email, password: firstPassword } });
+      assert.equal(oldLogin.statusCode, 200, oldLogin.body);
+      const oldCookie = String(oldLogin.headers["set-cookie"]).split(";", 1)[0]!;
+      const oldCsrf = oldLogin.json().csrf_token as string;
+
+      const forbidden = await app.inject({ method: "POST", url: `/api/v1/users/${userId}/password-reset`, headers: { cookie: oldCookie, "x-csrf-token": oldCsrf } });
+      assert.equal(forbidden.statusCode, 403, forbidden.body);
+
+      const issued = await app.inject({ method: "POST", url: `/api/v1/users/${userId}/password-reset`, headers: adminHeaders });
+      assert.equal(issued.statusCode, 201, issued.body);
+      assert.equal(issued.json().purpose, "password_reset");
+      const resetToken = issued.json().invitation_token as string;
+
+      const info = await app.inject({ method: "GET", url: `/api/v1/auth/invitations/${resetToken}` });
+      assert.equal(info.statusCode, 200, info.body);
+      assert.equal(info.json().purpose, "password_reset");
+
+      // kata sandi lama boleh dipakai kembali
+      const reset = await app.inject({ method: "POST", url: `/api/v1/auth/invitations/${resetToken}/accept`, payload: { password: firstPassword } });
+      assert.equal(reset.statusCode, 200, reset.body);
+      assert.equal(reset.json().status, "active");
+
+      const reused = await app.inject({ method: "GET", url: `/api/v1/auth/invitations/${resetToken}` });
+      assert.equal(reused.statusCode, 404, reused.body);
+      const staleSession = await app.inject({ method: "GET", url: "/api/v1/me", headers: { cookie: oldCookie } });
+      assert.equal(staleSession.statusCode, 401, staleSession.body);
+      const newLogin = await app.inject({ method: "POST", url: "/api/v1/auth/login", payload: { identifier: email, password: firstPassword } });
+      assert.equal(newLogin.statusCode, 200, newLogin.body);
+
+      const suspended = await app.inject({ method: "PATCH", url: `/api/v1/users/${userId}`, headers: adminHeaders, payload: { status: "suspended" } });
+      assert.equal(suspended.statusCode, 200, suspended.body);
+      const blocked = await app.inject({ method: "POST", url: `/api/v1/users/${userId}/password-reset`, headers: adminHeaders });
+      assert.equal(blocked.statusCode, 409, blocked.body);
+    } finally {
+      await app.close();
+      await db.end();
+    }
+  },
+);

@@ -241,6 +241,7 @@ interface InvitationInfo {
   email: string;
   full_name: string;
   expires_at: string;
+  purpose?: "invitation" | "password_reset";
 }
 
 export function InvitationPage() {
@@ -250,6 +251,7 @@ export function InvitationPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [activationStatus, setActivationStatus] = useState<"active" | "pending_approval" | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+  const isReset = info?.purpose === "password_reset";
   const [busy, setBusy] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -274,14 +276,14 @@ export function InvitationPage() {
     <section className="auth-panel">
       <div className="auth-card activation-card">
         {busy && !info ? <Spinner label="Memeriksa undangan" /> : error && !info ? <><Notice tone="error">{error}</Notice><button className="button secondary full" onClick={() => navigate("/login")}>Kembali ke login</button></> : activationStatus ? <>
-          <div className="success-symbol"><Check /></div><div className="auth-card-heading"><span className="context-label">{activationStatus === "pending_approval" ? "Menunggu verifikasi" : "Akun aktif"}</span><h2>{activationStatus === "pending_approval" ? "Kata sandi tersimpan" : "Akun Anda sudah aktif"}</h2><p>{activationStatus === "pending_approval" ? "Developer akan memeriksa identitas dan OPD sebelum akun dapat digunakan." : "Masuk menggunakan email dan kata sandi yang baru Anda buat."}</p></div>
+          <div className="success-symbol"><Check /></div><div className="auth-card-heading"><span className="context-label">{activationStatus === "pending_approval" ? "Menunggu verifikasi" : isReset ? "Kata sandi diperbarui" : "Akun aktif"}</span><h2>{activationStatus === "pending_approval" ? "Kata sandi tersimpan" : isReset ? "Kata sandi Anda sudah diperbarui" : "Akun Anda sudah aktif"}</h2><p>{activationStatus === "pending_approval" ? "Developer akan memeriksa identitas dan OPD sebelum akun dapat digunakan." : isReset ? "Masuk menggunakan email dan kata sandi yang baru saja Anda simpan." : "Masuk menggunakan email dan kata sandi yang baru Anda buat."}</p></div>
           <button className="button primary full" onClick={() => navigate("/login")}>Lanjut ke login <ArrowRight size={17} /></button>
         </> : info ? <form onSubmit={activate}>
-          <div className="auth-card-heading"><span className="context-label">Undangan pengguna</span><h2>Selamat datang, {info.full_name}</h2><p>{info.email}</p></div>
+          <div className="auth-card-heading"><span className="context-label">{isReset ? "Atur ulang kata sandi" : "Undangan pengguna"}</span><h2>{isReset ? "Halo" : "Selamat datang"}, {info.full_name}</h2><p>{info.email}</p>{isReset && <p>Anda boleh memakai kembali kata sandi yang sama seperti sebelumnya.</p>}</div>
           {error && <Notice tone="error">{error}</Notice>}
           <label className="field"><span>Kata sandi baru</span><div className="password-field"><input type={showPassword ? "text" : "password"} autoComplete="new-password" minLength={12} data-field="password" value={password} onChange={(event) => setPassword(event.target.value)} required /><button type="button" aria-label={showPassword ? "Sembunyikan kata sandi" : "Tampilkan kata sandi"} onClick={() => setShowPassword((value) => !value)}>{showPassword ? <EyeOff /> : <Eye />}</button></div><small>Minimal 12 karakter.</small></label>
           <label className="field"><span>Ulangi kata sandi</span><input type={showPassword ? "text" : "password"} autoComplete="new-password" minLength={12} data-field="confirm_password" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} required /></label>
-          <button className="button primary full" disabled={busy}>{busy ? <Spinner label="Mengaktifkan" /> : <>Aktifkan akun <ArrowRight size={17} /></>}</button>
+          <button className="button primary full" disabled={busy}>{busy ? <Spinner label={isReset ? "Menyimpan" : "Mengaktifkan"} /> : <>{isReset ? "Simpan kata sandi" : "Aktifkan akun"} <ArrowRight size={17} /></>}</button>
         </form> : null}
       </div>
     </section>
