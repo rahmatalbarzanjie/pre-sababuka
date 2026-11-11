@@ -13,6 +13,8 @@ interface InvitationRow extends QueryResultRow {
   email: string;
   full_name: string;
   expires_at: Date;
+  purpose: "invitation" | "password_reset";
+  user_status: string;
 }
 
 export interface SelfRegistrationInput {
@@ -163,14 +165,15 @@ export class AccountService {
   private async validInvitation(executor: unknown, token: string, lock = false) {
     const result = await (executor as Database).query<InvitationRow>(
       `SELECT i.id::text AS invitation_id, u.id::text AS user_id,
-              u.email::text, u.full_name, i.expires_at
+              u.email::text, u.full_name, i.expires_at, i.purpose, u.status AS user_status
        FROM sababuka.user_invitations i
        JOIN sababuka.users u ON u.id = i.user_id
        WHERE i.token_hash = $1
          AND i.accepted_at IS NULL
          AND i.revoked_at IS NULL
          AND i.expires_at > now()
-         AND u.status = 'invited'
+         AND ((i.purpose = 'invitation' AND u.status = 'invited')
+           OR (i.purpose = 'password_reset' AND u.status IN ('active', 'invited')))
          AND u.archived_at IS NULL
        LIMIT 1${lock ? " FOR UPDATE OF i, u" : ""}`,
       [hashToken(token)],
@@ -186,6 +189,7 @@ export class AccountService {
       email: invitation.email,
       full_name: invitation.full_name,
       expires_at: invitation.expires_at.toISOString(),
+      purpose: invitation.purpose,
     };
   }
 
@@ -195,6 +199,31 @@ export class AccountService {
     try {
       await client.query("BEGIN");
       const invitation = await this.validInvitation(client, token, true);
+      if (invitation.purpose === "password_reset") {
+        await client.query(
+          `UPDATE sababuka.users
+           SET password_hash = $2, must_change_password = false,
+               failed_login_count = 0, locked_until = NULL
+           WHERE id = $1`,
+          [invitation.user_id, passwordHash],
+        );
+        await client.query(`UPDATE sababuka.user_invitations SET accepted_at = now() WHERE id = $1`, [invitation.invitation_id]);
+        await client.query(
+          `UPDATE sababuka.auth_sessions SET revoked_at = now(), revoke_reason = 'password_reset'
+           WHERE user_id = $1 AND revoked_at IS NULL`,
+          [invitation.user_id],
+        );
+        await recordAudit(client, {
+          ...audit,
+          actorId: invitation.user_id,
+          eventType: "auth.password_reset_completed",
+          entityType: "user",
+          entityId: invitation.user_id,
+          metadata: { invitation_id: invitation.invitation_id },
+        });
+        await client.query("COMMIT");
+        return { email: invitation.email, status: invitation.user_status === "active" ? "active" : "pending_approval" };
+      }
       const pendingRegistration = await client.query<{ exists: boolean } & QueryResultRow>(
         `SELECT EXISTS (
            SELECT 1 FROM sababuka.user_registration_requests

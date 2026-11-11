@@ -47,3 +47,8 @@
 - Menambahkan kode error `MFA_REQUIRED`, `MFA_INVALID`, dan `INVITATION_INVALID`.
 
 Status `draft` dipertahankan sampai implementasi backend lulus contract test pertama. Perubahan yang memutus kompatibilitas sebelum rilis stabil tetap dicatat pada bagian ini.
+
+## 2026-11-11
+
+- Ditambahkan `POST /users/{user_id}/password-reset` (Superadmin): menerbitkan tautan atur ulang kata sandi untuk akun aktif, atau undangan baru untuk akun yang menunggu aktivasi.
+- `GET /auth/invitations/{token}` kini mengembalikan `purpose` (`invitation` atau `password_reset`).

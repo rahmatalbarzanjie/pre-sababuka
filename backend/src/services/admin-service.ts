@@ -291,6 +291,50 @@ export class AdminService {
     return pageEnvelope(result.rows, query.page, query.pageSize);
   }
 
+  async issuePasswordReset(auth: AuthContext, userId: string, audit: AuditContext) {
+    requireGlobal(auth);
+    const token = randomToken(32);
+    const expiresAt = new Date(Date.now() + this.config.invitationTtlSeconds * 1000);
+    const client = await this.db.connect();
+    try {
+      await client.query("BEGIN");
+      const found = await client.query<QueryResultRow & { status: string; email: string; full_name: string }>(
+        `SELECT status, email::text, full_name FROM sababuka.users WHERE id = $1 AND archived_at IS NULL FOR UPDATE`,
+        [userId],
+      );
+      const user = found.rows[0];
+      if (!user) throw new ApiError(404, "NOT_FOUND", "Pengguna tidak ditemukan.");
+      if (!["active", "invited"].includes(user.status)) {
+        throw new ApiError(409, "CONFLICT", "Hanya akun aktif atau yang menunggu aktivasi yang dapat diberi tautan atur ulang.");
+      }
+      const purpose = user.status === "active" ? "password_reset" : "invitation";
+      await client.query(
+        `UPDATE sababuka.user_invitations SET revoked_at = now()
+         WHERE user_id = $1 AND accepted_at IS NULL AND revoked_at IS NULL`,
+        [userId],
+      );
+      await client.query(
+        `INSERT INTO sababuka.user_invitations (user_id, token_hash, expires_at, created_by, purpose)
+         VALUES ($1, $2, $3, $4, $5)`,
+        [userId, hashToken(token), expiresAt, auth.user.id, purpose],
+      );
+      await recordAudit(client, {
+        ...audit,
+        eventType: "user.password_reset_issued",
+        entityType: "user",
+        entityId: userId,
+        metadata: { purpose, email: user.email },
+      });
+      await client.query("COMMIT");
+      return { user_id: userId, email: user.email, full_name: user.full_name, purpose, invitation_token: token, invitation_expires_at: expiresAt.toISOString() };
+    } catch (error) {
+      await client.query("ROLLBACK");
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
   async createUser(auth: AuthContext, input: UserCreateInput, audit: AuditContext) {
     requireGlobal(auth);
     const invitationToken = randomToken(32);
