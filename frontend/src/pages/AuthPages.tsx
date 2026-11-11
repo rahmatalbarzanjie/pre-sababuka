@@ -111,10 +111,11 @@ export function LoginPage() {
   }
 
   return <main className="login-page auth-layout">
+    <a className="skip-link" href="#form-masuk">Lewati ke formulir masuk</a>
     <AuthBackdrop />
     <AuthBrand />
     <section className="login-panel auth-panel">
-      <form className="auth-card login-card" onSubmit={submit}>
+      <form id="form-masuk" className="auth-card login-card" onSubmit={submit}>
         <div className="login-identity"><SababukaLockup className="login-lockup" /></div>
         <div className="auth-card-heading"><h1>Masuk ke SABABUKA</h1></div>
         {error && <Notice tone="error">{error}</Notice>}

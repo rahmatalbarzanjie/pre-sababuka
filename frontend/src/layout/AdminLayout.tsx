@@ -194,6 +194,17 @@ export function AdminLayout({ pathname, title, subtitle, actions, children }: { 
   }, [pathname]);
   useEffect(() => installServerFieldMarking(), []);
   useEffect(() => {
+    const nameTables = () => document.querySelectorAll("table:not([aria-label]):not([aria-labelledby])").forEach((table) => {
+      if (table.querySelector("caption")) return;
+      const heading = table.closest("section, article")?.querySelector("h2, h3")?.textContent?.trim() || document.querySelector("h1")?.textContent?.trim() || "Tabel data";
+      table.setAttribute("aria-label", heading);
+    });
+    nameTables();
+    const observer = new MutationObserver(nameTables);
+    if (mainRef.current) observer.observe(mainRef.current, { childList: true, subtree: true });
+    return () => observer.disconnect();
+  }, [pathname]);
+  useEffect(() => {
     // Validasi bawaan browser (required, pattern) diteruskan sebagai aria-invalid agar terbaca pembaca layar.
     const root = mainRef.current;
     if (!root) return;
