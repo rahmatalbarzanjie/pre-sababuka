@@ -46,6 +46,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
+    // Pratinjau peran tidak boleh terbawa: setiap muat ulang halaman kembali ke akses Developer penuh.
+    clearRolePreview();
     refresh().finally(() => setLoading(false));
   }, [refresh]);
 
