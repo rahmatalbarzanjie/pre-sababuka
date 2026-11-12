@@ -12,6 +12,8 @@ export interface AuditContext {
   requestId: string;
   ipAddress: string | null;
   userAgent: string | null;
+  // Diisi bila Developer bertindak sebagai peran/OPD lain; actorId tetap akun Developer asli.
+  actingAs?: { role_code: string; organization_id: string | null } | undefined;
 }
 
 export interface AuditEvent extends AuditContext {
@@ -38,7 +40,7 @@ export async function recordAudit(executor: QueryExecutor, event: AuditEvent): P
       event.entityId,
       event.beforeData ? JSON.stringify(event.beforeData) : null,
       event.afterData ? JSON.stringify(event.afterData) : null,
-      JSON.stringify(event.metadata ?? {}),
+      JSON.stringify(event.actingAs ? { ...(event.metadata ?? {}), acting_as: event.actingAs } : (event.metadata ?? {})),
       event.requestId,
       event.ipAddress,
       event.userAgent,

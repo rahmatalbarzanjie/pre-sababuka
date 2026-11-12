@@ -8,5 +8,8 @@ export function requestAuditContext(request: FastifyRequest): AuditContext {
     requestId: request.id,
     ipAddress: request.ip || null,
     userAgent: typeof rawUserAgent === "string" ? rawUserAgent.slice(0, 2000) : null,
+    actingAs: request.auth?.user.simulation?.active
+      ? { role_code: request.auth.user.simulation.role_code, organization_id: request.auth.user.simulation.organization_id }
+      : undefined,
   };
 }
