@@ -23,6 +23,12 @@ export interface DatasetPageQuery extends GovernancePageQuery {
 }
 
 export type CategoryTransitionAction = "submit" | "approve" | "reject" | "reopen";
+/** Developer (termasuk saat bertindak sebagai peran lain) dikecualikan dari aturan pengaju/reviewer/verifikator yang sama atas keputusan pemilik (12 Nov 2026). */
+function isDeveloperActor(auth: AuthContext): boolean {
+  return Boolean(auth.user.simulation?.active)
+    || auth.user.roles.some((role) => role.code === "superadmin" && role.scope_type === "global");
+}
+
 export type IndicatorTransitionAction = "submit" | "approve" | "verify" | "activate" | "retire";
 
 export function buildAutoPublicationNumber(publicationKey: string, versionNumber: number): string {
@@ -295,7 +301,7 @@ export class GovernanceService {
       if (current.rows[0]!.review_status !== transition.from) {
         throw new ApiError(409, "CONFLICT", `Aksi ${action} hanya dapat dijalankan dari status ${transition.from}.`);
       }
-      if (["approve", "reject"].includes(action) && current.rows[0]!.submitted_by === auth.user.id) {
+      if (["approve", "reject"].includes(action) && current.rows[0]!.submitted_by === auth.user.id && !isDeveloperActor(auth)) {
         throw new ApiError(409, "CONFLICT", "Pengaju kategori tidak boleh menjadi pengambil keputusan pada kategori yang sama.");
       }
       const result = await client.query<QueryResultRow & Record<string, unknown>>(
@@ -770,10 +776,10 @@ export class GovernanceService {
       if (action === "verify" && !currentVersion.metadata_complete) {
         throw new ApiError(409, "CONFLICT", "Lengkapi metadata teknis dan target indikator sebelum konfirmasi OPD.");
       }
-      if (action === "approve" && currentVersion.submitted_by === auth.user.id) {
+      if (action === "approve" && currentVersion.submitted_by === auth.user.id && !isDeveloperActor(auth)) {
         throw new ApiError(409, "CONFLICT", "Pengaju indikator tidak boleh menyetujui review indikator yang sama.");
       }
-      if (action === "verify" && currentVersion.bapperida_reviewed_by === auth.user.id) {
+      if (action === "verify" && currentVersion.bapperida_reviewed_by === auth.user.id && !isDeveloperActor(auth)) {
         throw new ApiError(409, "CONFLICT", "Reviewer BAPPERIDA tidak boleh menjadi verifikator teknis OPD yang sama.");
       }
       if (action === "activate") {
