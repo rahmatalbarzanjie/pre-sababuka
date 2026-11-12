@@ -39,7 +39,6 @@ export async function authenticateRequest(request: FastifyRequest): Promise<void
 
 export function requireCsrf(request: FastifyRequest): void {
   if (!request.auth) throw new ApiError(401, "AUTH_REQUIRED", "Sesi diperlukan.");
-  if (request.auth.user.simulation?.active) throw new ApiError(403, "PERMISSION_DENIED", "Mode pratinjau hanya untuk melihat. Kembali ke Developer untuk melakukan perubahan.");
   const token = request.headers["x-csrf-token"];
   if (typeof token !== "string" || !tokensMatch(token, request.auth.csrfTokenHash)) {
     throw new ApiError(403, "PERMISSION_DENIED", "Token CSRF tidak valid.");
