@@ -135,10 +135,11 @@ button.metric-card:active { transform: translateY(0) scale(.99); }
 /* Tombol utama: gradien biru navy, bayangan, efek tekan. */
 .button { transition: transform 140ms var(--vt-ease), box-shadow 200ms ease, background-color 140ms ease, border-color 140ms ease; }
 .button.primary {
-  background: linear-gradient(135deg, #1d3b63, #1b5796);
+  background-color: #1d3b63;
+  background-image: linear-gradient(135deg, #1d3b63, #1b5796);
   box-shadow: 0 6px 16px -8px rgba(27, 87, 150, .7);
 }
-.button.primary:hover { background: linear-gradient(135deg, #234a7a, #2166ad); box-shadow: 0 10px 22px -10px rgba(27, 87, 150, .8); transform: translateY(-1px); }
+.button.primary:hover { background-color: #234a7a; background-image: linear-gradient(135deg, #234a7a, #2166ad); box-shadow: 0 10px 22px -10px rgba(27, 87, 150, .8); transform: translateY(-1px); }
 .button:active:not(:disabled) { transform: translateY(0) scale(.98); }
 .button.secondary:hover { border-color: var(--vt-blue); color: var(--vt-blue); }
 
@@ -179,4 +180,10 @@ tbody tr:hover { background: color-mix(in srgb, var(--vt-blue) 6%, transparent);
   .executive-cards > article:hover,
   .button.primary:hover,
   .system-attention-list > button:hover { transform: none; }
+}
+
+/* Sasaran sentuh minimal 44px di layar sentuh. */
+@media (pointer: coarse), (max-width: 760px) {
+  .icon-button,
+  .topbar .icon-button { width: 44px; height: 44px; min-width: 44px; min-height: 44px; }
 }

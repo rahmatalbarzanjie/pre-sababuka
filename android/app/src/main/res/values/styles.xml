@@ -1,0 +1,7 @@
+<resources>
+    <style name="Theme.Sababuka" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:statusBarColor">#16304F</item>
+        <item name="android:navigationBarColor">#FFFFFF</item>
+        <item name="android:windowBackground">@drawable/splash</item>
+    </style>
+</resources>

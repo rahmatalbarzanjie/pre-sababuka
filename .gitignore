@@ -52,3 +52,10 @@ research/output/*-extract.txt
 research/output/*-audit.json
 research/output/*-audit-*.json
 research/output/*-ringkasan.csv
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+android/*.jks
+android/*.keystore
+*.apk
