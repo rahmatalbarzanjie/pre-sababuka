@@ -1,0 +1,189 @@
+/*
+ * SABABUKA vitality layer (12 Nov 2026, permintaan pemilik: tampilan lebih hidup).
+ * Tetap di arah "Kapuas Resmi": navy menyusun informasi, biru pemerintah untuk interaksi,
+ * emas hanya untuk penanda prioritas. Lapisan ini menambah warna aksen, kedalaman ringan,
+ * dan gerak halus tanpa mengubah struktur. Semua gerak mati pada prefers-reduced-motion.
+ */
+:root {
+  --vt-blue: #1b5796;
+  --vt-teal: #0f8a78;
+  --vt-amber: #c98a12;
+  --vt-violet: #6d4fc2;
+  --vt-red: #c2413b;
+  --vt-lift: 0 1px 2px rgba(10, 34, 65, .05), 0 10px 26px -14px rgba(27, 87, 150, .28);
+  --vt-lift-strong: 0 2px 4px rgba(10, 34, 65, .06), 0 16px 34px -16px rgba(27, 87, 150, .4);
+  --vt-ease: cubic-bezier(.22, .8, .3, 1);
+}
+html[data-theme="dark"] {
+  --vt-blue: #6aa8e8;
+  --vt-teal: #4cc3ad;
+  --vt-amber: #e8b04a;
+  --vt-violet: #a58df0;
+  --vt-red: #ef7a73;
+  --vt-lift: 0 1px 2px rgba(0, 0, 0, .3), 0 10px 26px -14px rgba(0, 0, 0, .6);
+  --vt-lift-strong: 0 2px 4px rgba(0, 0, 0, .35), 0 16px 34px -16px rgba(0, 0, 0, .7);
+}
+
+/* Latar halaman: nuansa biru lembut di atas, memudar ke putih. */
+.page-shell {
+  background:
+    radial-gradient(900px 260px at 8% -40px, color-mix(in srgb, var(--vt-blue) 11%, transparent), transparent 70%),
+    radial-gradient(640px 220px at 96% -30px, color-mix(in srgb, var(--vt-amber) 10%, transparent), transparent 70%),
+    var(--ui-surface);
+}
+
+/* Judul halaman: garis aksen gradien di bawah judul. */
+.page-header h1 { position: relative; padding-bottom: 10px; }
+.page-header h1::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 56px;
+  height: 4px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--vt-blue), var(--vt-teal) 70%, var(--vt-amber));
+}
+
+/* Panel dan kartu: kedalaman ringan dan sorot saat disentuh. */
+.panel,
+.metric-grid,
+.task-card,
+.system-health-banner,
+.executive-brief {
+  box-shadow: var(--vt-lift);
+}
+.panel,
+.task-card,
+.metric-grid,
+button.metric-card {
+  transition: box-shadow 220ms var(--vt-ease), transform 220ms var(--vt-ease), border-color 160ms ease, background-color 160ms ease;
+}
+.task-card:hover,
+button.metric-card:hover { box-shadow: var(--vt-lift-strong); transform: translateY(-2px); }
+.task-card:active,
+button.metric-card:active { transform: translateY(0) scale(.99); }
+
+/* Kartu metrik: ikon berwarna, angka berwarna sesuai makna, garis aksen di atas. */
+.metric-grid { overflow: hidden; }
+.metric-card { position: relative; }
+.metric-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
+  background: var(--vt-accent, var(--vt-blue));
+  opacity: .9;
+}
+.metric-card:nth-child(4n + 1) { --vt-accent: var(--vt-blue); }
+.metric-card:nth-child(4n + 2) { --vt-accent: var(--vt-teal); }
+.metric-card:nth-child(4n + 3) { --vt-accent: var(--vt-amber); }
+.metric-card:nth-child(4n + 4) { --vt-accent: var(--vt-violet); }
+.metric-card strong { color: color-mix(in srgb, var(--vt-accent, var(--vt-blue)) 78%, var(--ui-text)); font-variant-numeric: tabular-nums; }
+.metric-card > svg { color: var(--vt-accent, var(--vt-blue)); opacity: .75; transition: transform 220ms var(--vt-ease), opacity 160ms ease; }
+.metric-card:hover > svg { transform: translateX(3px); opacity: 1; }
+
+.metric-icon {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
+  border-radius: 12px;
+  color: var(--vt-accent, var(--vt-blue));
+  background: color-mix(in srgb, var(--vt-accent, var(--vt-blue)) 14%, transparent);
+}
+.metric-icon svg { width: 20px; height: 20px; }
+.metric-icon.blue { --vt-accent: var(--vt-blue); }
+.metric-icon.teal { --vt-accent: var(--vt-teal); }
+.metric-icon.amber { --vt-accent: var(--vt-amber); }
+.metric-icon.violet { --vt-accent: var(--vt-violet); }
+.metric-card:has(.metric-icon.teal) { --vt-accent: var(--vt-teal); }
+.metric-card:has(.metric-icon.amber) { --vt-accent: var(--vt-amber); }
+.metric-card:has(.metric-icon.violet) { --vt-accent: var(--vt-violet); }
+.metric-card:has(.metric-icon.blue) { --vt-accent: var(--vt-blue); }
+.task-card:has(.metric-icon.teal) { --vt-accent: var(--vt-teal); }
+.task-card:has(.metric-icon.amber) { --vt-accent: var(--vt-amber); }
+.task-card:has(.metric-icon.violet) { --vt-accent: var(--vt-violet); }
+.task-card:has(.metric-icon.blue) { --vt-accent: var(--vt-blue); }
+.task-card.has-work { background: linear-gradient(135deg, color-mix(in srgb, var(--vt-accent, var(--vt-blue)) 12%, var(--ui-surface)), var(--ui-surface) 70%); }
+
+/* Banner kesehatan sistem: status berdenyut halus. */
+.system-health-banner { border-left: 4px solid var(--vt-teal); }
+.system-health-banner.attention { border-left-color: var(--vt-amber); }
+.system-health-banner > span:first-child svg { animation: vt-pulse 2.6s ease-in-out infinite; }
+.system-health-banner.attention > span:first-child svg { color: var(--vt-amber); }
+
+/* Menu samping: bilah aksen pada menu aktif, ikon bergeser halus. */
+.nav-link { position: relative; }
+.nav-link svg { transition: transform 180ms var(--vt-ease), color 140ms ease; }
+.nav-link:hover svg { transform: scale(1.1); color: var(--vt-blue); }
+.nav-link.active {
+  background: linear-gradient(90deg, color-mix(in srgb, var(--vt-blue) 16%, transparent), color-mix(in srgb, var(--vt-blue) 5%, transparent));
+}
+.nav-link.active::before {
+  content: "";
+  position: absolute;
+  left: -2px;
+  top: 8px;
+  bottom: 8px;
+  width: 4px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, var(--vt-blue), var(--vt-teal));
+}
+
+/* Tombol utama: gradien biru navy, bayangan, efek tekan. */
+.button { transition: transform 140ms var(--vt-ease), box-shadow 200ms ease, background-color 140ms ease, border-color 140ms ease; }
+.button.primary {
+  background-color: #1d3b63;
+  background-image: linear-gradient(135deg, #1d3b63, #1b5796);
+  box-shadow: 0 6px 16px -8px rgba(27, 87, 150, .7);
+}
+.button.primary:hover { background-color: #234a7a; background-image: linear-gradient(135deg, #234a7a, #2166ad); box-shadow: 0 10px 22px -10px rgba(27, 87, 150, .8); transform: translateY(-1px); }
+.button:active:not(:disabled) { transform: translateY(0) scale(.98); }
+.button.secondary:hover { border-color: var(--vt-blue); color: var(--vt-blue); }
+
+/* Baris tabel dan daftar tindakan: sorot saat diarahkan. */
+tbody tr { transition: background-color 140ms ease; }
+tbody tr:hover { background: color-mix(in srgb, var(--vt-blue) 6%, transparent); }
+.system-attention-list > button { transition: background-color 140ms ease, padding-left 200ms var(--vt-ease); }
+.system-attention-list > button:hover { background: color-mix(in srgb, var(--vt-blue) 7%, transparent); padding-left: 6px; }
+.system-attention-list > button:hover svg { color: var(--vt-blue); transform: translateX(3px); }
+.system-attention-list > button svg { transition: transform 200ms var(--vt-ease), color 140ms ease; }
+
+/* Kartu perkembangan indikator (Dashboard Pimpinan). */
+.executive-cards > article { transition: box-shadow 220ms var(--vt-ease), transform 220ms var(--vt-ease), border-color 160ms ease; }
+.executive-cards > article:hover { box-shadow: var(--vt-lift-strong); transform: translateY(-3px); border-color: color-mix(in srgb, var(--vt-blue) 45%, var(--ui-border)); }
+.executive-signal.good { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--vt-teal) 30%, transparent); }
+
+/* Masuk halaman: isi muncul bertahap dari bawah. */
+@keyframes vt-rise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+@keyframes vt-pulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.14); opacity: .78; } }
+.page-shell > * { animation: vt-rise 420ms var(--vt-ease) both; }
+.page-shell > *:nth-child(2) { animation-delay: 50ms; }
+.page-shell > *:nth-child(3) { animation-delay: 100ms; }
+.page-shell > *:nth-child(4) { animation-delay: 150ms; }
+.page-shell > *:nth-child(5) { animation-delay: 200ms; }
+.page-shell > *:nth-child(n + 6) { animation-delay: 250ms; }
+.metric-grid > .metric-card { animation: vt-rise 460ms var(--vt-ease) both; }
+.metric-grid > .metric-card:nth-child(2) { animation-delay: 80ms; }
+.metric-grid > .metric-card:nth-child(3) { animation-delay: 160ms; }
+.metric-grid > .metric-card:nth-child(4) { animation-delay: 240ms; }
+.metric-grid > .metric-card:nth-child(5) { animation-delay: 320ms; }
+
+@media (prefers-reduced-motion: reduce) {
+  .page-shell > *,
+  .metric-grid > .metric-card,
+  .system-health-banner > span:first-child svg { animation: none; }
+  .task-card:hover,
+  button.metric-card:hover,
+  .executive-cards > article:hover,
+  .button.primary:hover,
+  .system-attention-list > button:hover { transform: none; }
+}
+
+/* Sasaran sentuh minimal 44px di layar sentuh. */
+@media (pointer: coarse), (max-width: 760px) {
+  .icon-button,
+  .topbar .icon-button { width: 44px; height: 44px; min-width: 44px; min-height: 44px; }
+}

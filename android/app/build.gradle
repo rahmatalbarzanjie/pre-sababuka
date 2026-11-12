@@ -1,0 +1,52 @@
+plugins {
+    id "com.android.application"
+}
+
+def appUrl = (project.findProperty("sababukaUrl") ?: "https://dev.sababuka.com").toString()
+def appHost = new URI(appUrl).host
+
+android {
+    namespace "com.sababuka.bersinar"
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "com.sababuka.bersinar"
+        minSdk 24
+        targetSdk 34
+        versionCode 1
+        versionName "1.0"
+        buildConfigField "String", "APP_URL", "\"${appUrl}\""
+        buildConfigField "String", "APP_HOST", "\"${appHost}\""
+    }
+
+    buildFeatures {
+        buildConfig true
+    }
+
+    // Tanda tangan rilis dibaca dari ~/.gradle/gradle.properties atau -P; kunci tidak pernah masuk repo.
+    signingConfigs {
+        release {
+            def ks = project.findProperty("SABABUKA_KEYSTORE")
+            if (ks) {
+                storeFile file(ks)
+                storePassword project.findProperty("SABABUKA_KEYSTORE_PASSWORD")
+                keyAlias project.findProperty("SABABUKA_KEY_ALIAS")
+                keyPassword project.findProperty("SABABUKA_KEY_PASSWORD")
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            if (project.findProperty("SABABUKA_KEYSTORE")) {
+                signingConfig signingConfigs.release
+            }
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
