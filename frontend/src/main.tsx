@@ -8,7 +8,10 @@ import "./styles.css";
 import "./ui-system.css";
 import "./vitality.css";
 import "./responsive.css";
+import "./interactions.css";
+import { initInteractions } from "./interactions";
 import { initializeTheme } from "./theme";
 
 initializeTheme();
+initInteractions();
 createRoot(document.getElementById("root")!).render(<StrictMode><App /></StrictMode>);

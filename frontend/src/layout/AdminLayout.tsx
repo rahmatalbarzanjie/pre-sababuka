@@ -37,6 +37,7 @@ import {
   Megaphone,
   BookCheck,
   Sun,
+  Search,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useAuth } from "../auth";
@@ -48,6 +49,7 @@ import { notificationDestination } from "../notification-routing";
 import { formatTanggal, Modal } from "../components";
 import { SababukaAssistantMark, SababukaLockup, SababukaMark } from "../branding/SababukaBrand";
 import { applyTheme, readTheme, type ThemeMode } from "../theme";
+import { CommandPalette, type PaletteItem } from "./CommandPalette";
 
 const iconByCode: Record<string, typeof LayoutDashboard> = {
   organizations: Building2,
@@ -97,6 +99,7 @@ export function AdminLayout({ pathname, title, subtitle, actions, children }: { 
   const [mobile, setMobile] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
+  const [paletteOpen, setPaletteOpen] = useState(false);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
   const [notificationOpen, setNotificationOpen] = useState(false);
   const [notificationLoading, setNotificationLoading] = useState(false);
@@ -324,6 +327,18 @@ export function AdminLayout({ pathname, title, subtitle, actions, children }: { 
   };
   const leavePreview = async () => { setPreviewBusy(true); await stopPreview(); setPreviewBusy(false); setProfileOpen(false); navigate("/admin"); };
   const doLogout = async () => { await logout(); navigate("/login"); };
+  const paletteItems = useMemo<PaletteItem[]>(() => [
+    ...navigationSections.flatMap((section) => section.entries.filter((entry) => entry.route_name && !entry.navigation_disabled).map((entry) => ({ id: `menu-${entry.code}`, label: entry.label, group: section.label, hint: entry.route_name ?? undefined, run: () => navigate(entry.route_name!) }))),
+    { id: "act-theme", label: theme === "dark" ? "Gunakan tema terang" : "Gunakan tema gelap", group: "Tindakan", run: () => setTheme((value) => value === "dark" ? "light" : "dark") },
+    { id: "act-help", label: "Buka bantuan penggunaan", group: "Tindakan", run: () => setHelpOpen(true) },
+  ], [navigationSections, theme]);
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") { event.preventDefault(); setPaletteOpen((open) => !open); }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
   return <div className={`workspace ${collapsed ? "collapsed" : ""}`}>
     <button className="skip-link" onClick={() => { mainRef.current?.focus({ preventScroll: true }); mainRef.current?.scrollIntoView({ block: "start" }); }}>Lewati navigasi ke konten utama</button>
     <aside ref={sidebarRef} className={`sidebar ${mobile ? "mobile-open" : ""}`} aria-label="Navigasi utama">
@@ -344,6 +359,7 @@ export function AdminLayout({ pathname, title, subtitle, actions, children }: { 
         <nav className="topbar-context" aria-label="Lokasi halaman" title={subtitle}><span>{areaLabel}</span><i aria-hidden>/</i><strong tabIndex={-1}>{title}</strong></nav>
         <div className="topbar-actions">
           {actions}
+          <button className="icon-button palette-trigger" aria-label="Cari menu (Ctrl+K)" title="Cari menu (Ctrl+K)" aria-haspopup="dialog" onClick={() => setPaletteOpen(true)}><Search /></button>
           <button className="icon-button theme-toggle" aria-label={theme === "dark" ? "Gunakan tema terang" : "Gunakan tema gelap"} title={theme === "dark" ? "Tema terang" : "Tema gelap"} onClick={() => setTheme((value) => value === "dark" ? "light" : "dark")}>{theme === "dark" ? <Sun /> : <Moon />}</button>
           <button ref={helpTriggerRef} className="icon-button" aria-label="Buka bantuan penggunaan" aria-haspopup="dialog" aria-expanded={helpOpen} onClick={() => setHelpOpen(true)}><HelpCircle /></button>
           {!isRolePreview && <div className="notification-wrap" ref={notificationRef}>
@@ -384,6 +400,7 @@ export function AdminLayout({ pathname, title, subtitle, actions, children }: { 
       </footer>
     </section>
     {isPimpinan && <button type="button" className="assistant-floating-button" onClick={() => go("/assistant")} aria-label="Buka Asisten AI" title="Buka Asisten AI"><span className="assistant-floating-icon" aria-hidden><SababukaAssistantMark /><i /></span><span className="assistant-floating-label"><strong>Asisten AI</strong></span></button>}
+    {paletteOpen && <CommandPalette items={paletteItems} onClose={() => setPaletteOpen(false)} />}
     {helpOpen && <><button className="help-overlay" aria-label="Tutup bantuan" onClick={() => setHelpOpen(false)} /><aside ref={helpRef} tabIndex={-1} className="help-drawer" role="dialog" aria-modal="true" aria-labelledby="help-drawer-title"><header><div><h2 id="help-drawer-title">{help.title}</h2></div><button type="button" className="icon-button" aria-label="Tutup bantuan" onClick={() => setHelpOpen(false)}><X /></button></header><p>{help.intro}</p><ol>{help.steps.map((step) => <li key={step}><span>{help.steps.indexOf(step) + 1}</span><p>{step}</p></li>)}</ol><section><strong>Istilah penting</strong><dl><div><dt>Target</dt><dd>Sasaran RPJMD untuk tahun pelaporan.</dd></div><div><dt>Realisasi</dt><dd>Nilai yang benar-benar dicapai OPD.</dd></div><div><dt>Dipublikasikan</dt><dd>Sudah diperiksa, dikurasi, dan boleh dilihat pimpinan.</dd></div></dl></section><footer><small>Jika tugas atau data tidak sesuai, catat nama indikator, periode, dan OPD lalu hubungi Pengelola Sistem.</small><button type="button" className="button primary" onClick={() => setHelpOpen(false)}>Saya mengerti</button></footer></aside></>}
     {announcement?.enabled && <Modal title={announcement.title ?? "Pemberitahuan"} onClose={() => setAnnouncement(null)}><article className="login-announcement"><span className="announcement-icon"><Megaphone /></span>{announcement.image_url && <img src={announcement.image_url} alt="Ilustrasi pemberitahuan" />}<p>{announcement.message}</p><footer className="modal-actions">{announcement.action_url && <a className="button secondary" href={announcement.action_url} target={announcement.action_url.startsWith("http") ? "_blank" : undefined} rel="noreferrer">{announcement.action_label ?? "Buka informasi"}</a>}<button type="button" className="button primary" onClick={() => setAnnouncement(null)}>Tutup</button></footer></article></Modal>}
   </div>;
