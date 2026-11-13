@@ -1,0 +1,104 @@
+/*
+ * SABABUKA responsive hardening (13 Nov 2026, uji iPhone 11).
+ * Tujuan: tidak ada zoom otomatis atau geser samping di layar sentuh, dan ukuran kolom isian seragam
+ * di semua halaman dan modal. Dimuat paling akhir agar menjadi acuan tunggal untuk kontrol formulir.
+ */
+:root {
+  --vt-field-h: 44px;
+  --vt-field-font: 14px;
+}
+@media (max-width: 900px), (pointer: coarse) {
+  :root {
+    --vt-field-h: 46px;
+    /* iOS Safari memperbesar halaman otomatis bila font kolom isian di bawah 16px. */
+    --vt-field-font: 16px;
+  }
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+/* Jaring pengaman terakhir: halaman tidak pernah bergeser ke samping. */
+html,
+body { max-width: 100%; overflow-x: clip; }
+img,
+video,
+canvas { max-width: 100%; height: auto; }
+
+/* Perangkat dengan takik (iPhone landscape): isi tidak tertutup. */
+@supports (padding: max(0px)) {
+  body {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+  .assistant-floating-button { margin-bottom: env(safe-area-inset-bottom); }
+}
+
+/* Teks panjang tidak mendorong lebar kartu. */
+.page-shell :where(h1, h2, h3, h4, p, small, strong, li, dd, dt, label) { overflow-wrap: break-word; }
+.page-shell :where(.panel, .metric-card, .task-card, article, section, form, fieldset, header, div) { min-width: 0; }
+
+/* Kontrol formulir seragam: tinggi, font, padding, dan radius yang sama di semua halaman. */
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="hidden"]):not([type="color"]),
+select,
+textarea {
+  font-family: inherit;
+  font-size: var(--vt-field-font);
+  line-height: 1.35;
+  box-sizing: border-box;
+  max-width: 100%;
+}
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="hidden"]):not([type="color"]):not(.search-box input):not(.search-field input):not(.chat-composer *),
+select {
+  min-height: var(--vt-field-h);
+}
+textarea { min-height: 96px; }
+.search-box,
+.search-field { min-height: var(--vt-field-h); box-sizing: border-box; }
+.search-box input,
+.search-field input { min-height: 0; }
+
+/* Tombol sejajar dengan kolom isian. */
+.button { min-height: var(--vt-field-h); }
+@media (max-width: 900px), (pointer: coarse) {
+  .button.compact { min-height: 44px; }
+  select { padding-right: 34px; }
+}
+
+/* Formulir di modal: satu kolom penuh lebar di layar sempit. */
+@media (max-width: 640px) {
+  .modal .field,
+  .modal .form-stack > *,
+  .modal form > label { width: 100%; }
+  .modal-actions,
+  .modal .detail-actions { flex-wrap: wrap; }
+  .modal-actions .button,
+  .modal .detail-actions .button { flex: 1 1 140px; }
+}
+
+/* Ukuran kolom isian bersifat acuan tunggal: menimpa gaya halaman yang menetapkan font atau tinggi sendiri. */
+select,
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="hidden"]):not([type="color"]):not(.search-box input):not(.search-field input):not(.chat-composer *) {
+  font-size: var(--vt-field-font) !important;
+  min-height: var(--vt-field-h) !important;
+}
+.search-box input,
+.search-field input,
+textarea:not(.chat-composer textarea) { font-size: var(--vt-field-font) !important; }
+textarea:not(.chat-composer textarea) { min-height: 96px !important; }
+
+/* Layar sempit (hingga 520px): filter satu kolom, kartu laporan dan metrik tidak terpotong. */
+@media (max-width: 520px) {
+  .data-toolbar .table-filters { display: grid; grid-template-columns: 1fr; gap: 10px; width: 100%; }
+  .data-toolbar .table-filters > select,
+  .data-toolbar .table-filters .search-box,
+  .toolbar > select { width: 100%; min-width: 0; }
+  .readiness-metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); overflow: visible; }
+  .readiness-metrics > span { min-width: 0; flex: none; padding: 9px; }
+  .readiness-metrics small { overflow-wrap: anywhere; }
+}
+.submission-mobile-list > button { min-width: 0; max-width: 100%; overflow: hidden; }
+.submission-mobile-list header { flex-wrap: wrap; }
+.submission-mobile-list header > span { min-width: 0; flex: 1 1 140px; overflow-wrap: anywhere; }
+.submission-mobile-list .badge { max-width: 100%; white-space: normal; text-align: left; }

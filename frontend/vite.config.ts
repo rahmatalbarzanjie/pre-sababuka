@@ -10,8 +10,9 @@ export default defineConfig({
     strictPort: true,
     proxy: {
       "/api": {
-        target: "http://127.0.0.1:3001",
-        changeOrigin: false,
+        // SABABUKA_API_TARGET mengarahkan dev server ke API lain (mis. produksi) untuk uji tampilan.
+        target: process.env.SABABUKA_API_TARGET ?? "http://127.0.0.1:3001",
+        changeOrigin: Boolean(process.env.SABABUKA_API_TARGET),
       },
     },
   },
