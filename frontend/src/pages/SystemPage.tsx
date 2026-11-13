@@ -145,7 +145,16 @@ function SettingForm({ onClose, onSaved }: { onClose(): void; onSaved(): void })
 }
 
 export function SecurityPage() {
-  const { user } = useAuth();
+  const { user, refresh } = useAuth();
+  const [fullName, setFullName] = useState(user?.full_name ?? "");
+  const [profileBusy, setProfileBusy] = useState(false);
+  const [profileMessage, setProfileMessage] = useState<{ tone: "success" | "error"; text: string } | null>(null);
+  async function saveProfile(event: FormEvent) {
+    event.preventDefault(); setProfileBusy(true); setProfileMessage(null);
+    try { await api("/me", { method: "PATCH", mutation: true, body: jsonBody({ full_name: fullName }) }); await refresh(); setProfileMessage({ tone: "success", text: "Profil berhasil disimpan." }); }
+    catch (reason) { setProfileMessage({ tone: "error", text: reason instanceof Error ? reason.message : "Profil belum dapat disimpan." }); }
+    finally { setProfileBusy(false); }
+  }
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -163,6 +172,12 @@ export function SecurityPage() {
     finally { setBusy(false); }
   }
   return <section className="security-grid"><article className="panel security-overview"><span className="security-shield active"><ShieldCheck /></span><div><span className="eyebrow">Akun</span><h2>{user?.email}</h2><p>Masuk menggunakan email atau username dan kata sandi. Ganti kata sandi secara berkala dan jangan membagikannya.</p></div></article>
+    <article className="panel setup-panel"><header><div><span className="eyebrow">Profil</span><h2>Data akun</h2></div></header>{profileMessage && <Notice tone={profileMessage.tone}>{profileMessage.text}</Notice>}<form className="form-stack" onSubmit={saveProfile}>
+      <label className="field"><span>Nama lengkap</span><input data-field="full_name" value={fullName} onChange={(event) => setFullName(event.target.value)} required minLength={3} maxLength={255} autoComplete="name" /></label>
+      <label className="field"><span>Email</span><input value={user?.email ?? ""} readOnly /></label>
+      <label className="field"><span>Instansi</span><input value={user?.organizations.map((organization) => organization.name).join(", ") || "Lingkup global"} readOnly /><small>Perubahan instansi atau peran diajukan kepada pengelola sistem.</small></label>
+      <button className="button primary" disabled={profileBusy || fullName.trim() === user?.full_name}><Save />{profileBusy ? "Menyimpan…" : "Simpan profil"}</button>
+    </form></article>
     <article className="panel setup-panel"><header><div><span className="eyebrow">Kata sandi</span><h2>Ganti kata sandi</h2></div></header>{error && <Notice tone="error">{error}</Notice>}{done && <Notice tone="success">Kata sandi berhasil diganti.</Notice>}<form className="form-stack" onSubmit={submit}>
       <label className="field"><span>Kata sandi saat ini</span><input type="password" autoComplete="current-password" data-field="current_password" value={currentPassword} onChange={(event) => setCurrentPassword(event.target.value)} required minLength={8} /></label>
       <label className="field"><span>Kata sandi baru</span><input type="password" autoComplete="new-password" data-field="new_password" value={newPassword} onChange={(event) => setNewPassword(event.target.value)} required minLength={12} /><small>Minimal 12 karakter.</small></label>

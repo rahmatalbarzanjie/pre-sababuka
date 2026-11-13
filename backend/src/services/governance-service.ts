@@ -676,7 +676,7 @@ export class GovernanceService {
       if (before.status !== "opd_verification") {
         throw new ApiError(409, "CONFLICT", "Metadata teknis hanya dapat diperbaiki saat indikator menunggu verifikasi OPD.");
       }
-      if (!before.owner_organization_id || !scope.includes(before.owner_organization_id)) {
+      if (!isDeveloperActor(auth) && (!before.owner_organization_id || !scope.includes(before.owner_organization_id))) {
         throw new ApiError(403, "SCOPE_DENIED", "Metadata teknis hanya dapat diubah oleh OPD penanggung jawab indikator.");
       }
       const result = await client.query<QueryResultRow & Record<string, unknown>>(
@@ -755,7 +755,7 @@ export class GovernanceService {
         } else requireIndicatorDrafter(auth);
       } else if (action === "verify") {
         const scope = organizationScope(auth);
-        if (!currentVersion.owner_organization_id || !scope.includes(currentVersion.owner_organization_id)) {
+        if (!isDeveloperActor(auth) && (!currentVersion.owner_organization_id || !scope.includes(currentVersion.owner_organization_id))) {
           throw new ApiError(403, "SCOPE_DENIED", "Verifikasi hanya dapat dilakukan oleh OPD pemilik indikator.");
         }
       } else {
