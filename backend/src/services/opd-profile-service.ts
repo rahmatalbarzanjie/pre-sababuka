@@ -121,9 +121,14 @@ export class OpdProfileService {
               p.technical_notes,p.planning_notes,p.submitted_at::text,p.updated_at::text,
               (SELECT count(*)::int FROM sababuka.opd_profile_documents d WHERE d.profile_id=p.id AND d.deleted_at IS NULL) AS document_count,
               (SELECT count(DISTINCT u.id)::int
-               FROM sababuka.organization_memberships om
-               JOIN sababuka.users u ON u.id=om.user_id AND u.archived_at IS NULL AND u.status='active'
-               WHERE om.organization_id=o.id AND om.ends_at IS NULL) AS active_account_count,
+               FROM sababuka.users u
+               WHERE u.archived_at IS NULL AND u.status='active'
+                 AND (EXISTS (SELECT 1 FROM sababuka.organization_memberships om
+                              WHERE om.user_id=u.id AND om.organization_id=o.id AND om.ends_at IS NULL)
+                      -- Peran berlingkup global (mis. Verifikator BAPPERIDA) tidak punya keanggotaan OPD;
+                      -- akun tetap dihitung lewat pendaftaran yang disetujui untuk instansi tersebut.
+                      OR EXISTS (SELECT 1 FROM sababuka.user_registration_requests rr
+                                 WHERE rr.user_id=u.id AND rr.requested_organization_id=o.id AND rr.status='approved'))) AS active_account_count,
               (SELECT count(DISTINCT i.id)::int
                FROM sababuka.indicators i
                JOIN LATERAL (SELECT v.id FROM sababuka.indicator_versions v WHERE v.indicator_id=i.id ORDER BY v.version_number DESC LIMIT 1) iv ON true
