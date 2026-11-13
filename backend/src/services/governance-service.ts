@@ -416,15 +416,15 @@ export class GovernanceService {
               (i.owner_organization_id IS NOT NULL) AS has_owner,
               (iv.unit_id IS NOT NULL) AS has_unit,
               (length(trim(COALESCE(iv.source_reference, ''))) > 0) AS has_source,
-              (COALESCE(targets.target_count, 0) >= 5) AS has_rpjmd_targets,
+              (COALESCE(targets.target_count, 0) >= 1) AS has_rpjmd_targets,
               (length(trim(iv.definition)) >= 5 AND i.owner_organization_id IS NOT NULL
                 AND iv.unit_id IS NOT NULL AND length(trim(COALESCE(iv.source_reference, ''))) > 0
-                AND COALESCE(targets.target_count, 0) >= 5) AS metadata_complete,
+                AND COALESCE(targets.target_count, 0) >= 1) AS metadata_complete,
               count(*) OVER()::text AS total_count,
               count(*) FILTER (WHERE length(trim(iv.definition)) >= 5
                 AND i.owner_organization_id IS NOT NULL AND iv.unit_id IS NOT NULL
                 AND length(trim(COALESCE(iv.source_reference, ''))) > 0
-                AND COALESCE(targets.target_count, 0) >= 5) OVER()::text AS metadata_complete_count,
+                AND COALESCE(targets.target_count, 0) >= 1) OVER()::text AS metadata_complete_count,
               count(*) FILTER (WHERE iv.status = 'active') OVER()::text AS active_count
        FROM sababuka.indicators i
        JOIN sababuka.categories c ON c.id = i.category_id
@@ -457,10 +457,10 @@ export class GovernanceService {
          AND ($5::text IS NULL OR iv.status = $5)
          AND ($6::text IS NULL OR ($6 = 'complete' AND length(trim(iv.definition)) >= 5
               AND i.owner_organization_id IS NOT NULL AND iv.unit_id IS NOT NULL
-              AND length(trim(COALESCE(iv.source_reference, ''))) > 0 AND COALESCE(targets.target_count, 0) >= 5)
+              AND length(trim(COALESCE(iv.source_reference, ''))) > 0 AND COALESCE(targets.target_count, 0) >= 1)
             OR ($6 = 'incomplete' AND NOT (length(trim(iv.definition)) >= 5
               AND i.owner_organization_id IS NOT NULL AND iv.unit_id IS NOT NULL
-              AND length(trim(COALESCE(iv.source_reference, ''))) > 0 AND COALESCE(targets.target_count, 0) >= 5)))
+              AND length(trim(COALESCE(iv.source_reference, ''))) > 0 AND COALESCE(targets.target_count, 0) >= 1)))
          AND ($7::boolean OR i.owner_organization_id = ANY($8::uuid[]) OR EXISTS (
            SELECT 1 FROM sababuka.indicator_organizations x WHERE x.indicator_version_id = iv.id AND x.organization_id = ANY($8::uuid[])))
        ORDER BY ${orderColumn} ${orderDirection} NULLS LAST, pf.display_order, c.display_order, c.code, i.name, i.code LIMIT $9 OFFSET $10`,
@@ -736,7 +736,7 @@ export class GovernanceService {
                   AND iv.unit_id IS NOT NULL AND length(trim(COALESCE(iv.source_reference, ''))) > 0
                   AND (SELECT count(*) FROM sababuka.targets t
                        WHERE t.indicator_version_id = iv.id AND t.geography_id IS NULL
-                         AND t.dimension_values = '{}'::jsonb) >= 5) AS metadata_complete
+                         AND t.dimension_values = '{}'::jsonb) >= 1) AS metadata_complete
          FROM sababuka.indicator_versions iv
          JOIN sababuka.indicators i ON i.id = iv.indicator_id
          LEFT JOIN sababuka.organizations owner ON owner.id = i.owner_organization_id
@@ -768,7 +768,7 @@ export class GovernanceService {
         throw new ApiError(409, "CONFLICT", "Kategori harus disetujui BAPPERIDA sebelum indikator diajukan.");
       }
       if (action === "submit" && !currentVersion.metadata_complete) {
-        throw new ApiError(409, "CONFLICT", "Lengkapi definisi, satuan, OPD, sumber data, dan target tahunan 2025–2029 sebelum indikator diajukan.");
+        throw new ApiError(409, "CONFLICT", "Lengkapi definisi, satuan, OPD, sumber data, dan minimal satu target tahunan sebelum indikator diajukan. Tahun tanpa data boleh dikosongkan.");
       }
       if (action === "approve" && !currentVersion.owner_organization_id) {
         throw new ApiError(409, "CONFLICT", "OPD pemilik harus ditetapkan sebelum indikator dikirim untuk verifikasi teknis.");
