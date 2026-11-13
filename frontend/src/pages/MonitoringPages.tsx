@@ -1,4 +1,4 @@
-import { Bell, CheckCheck, ScrollText, Wrench } from "lucide-react";
+import { Bell, CheckCheck, Wrench } from "lucide-react";
 import { useState } from "react";
 import { api } from "../api";
 import { useAuth } from "../auth";
@@ -52,7 +52,7 @@ export function AuditPage() {
       {result.loading ? <div className="panel-loading"><Spinner /></div>
         : result.error ? <ErrorState title="Audit aktivitas belum dapat dimuat" onRetry={result.reload}>{result.error}</ErrorState>
         : !result.data?.data.length ? <EmptyState title="Belum ada audit">Aktivitas yang berada dalam lingkup Anda akan tampil di sini.</EmptyState>
-        : <div className="table-scroll"><table><thead><tr><SortableHeader label="Waktu" column="occurred_at" sortBy={sortBy} direction={sortOrder} onSort={changeSort} /><SortableHeader label="Aktivitas" column="event_type" sortBy={sortBy} direction={sortOrder} onSort={changeSort} /><SortableHeader label="Objek data" column="entity_type" sortBy={sortBy} direction={sortOrder} onSort={changeSort} /><SortableHeader label="Dilakukan oleh" column="actor" sortBy={sortBy} direction={sortOrder} onSort={changeSort} /><SortableHeader label="Instansi" column="organization" sortBy={sortBy} direction={sortOrder} onSort={changeSort} />{technical && <th>Detail teknis</th>}</tr></thead><tbody>{result.data.data.map((item) => <tr key={item.id}><td>{formatDate(item.occurred_at)}</td><td><div className="identity-cell"><span className="table-icon"><ScrollText /></span><span><strong>{auditEventLabel(item.event_type)}</strong>{technical && <small>{item.event_type}</small>}</span></div></td><td><Badge tone="neutral">{auditEntityLabel(item.entity_type)}</Badge></td><td>{item.actor_name ?? "Proses otomatis sistem"}</td><td>{item.organization_name ?? "Lintas instansi"}</td>{technical && <td><code title={item.request_id ?? undefined}>{item.request_id?.slice(0, 8) ?? "-"}</code><small>{item.id.slice(0, 8)}</small></td>}</tr>)}</tbody></table></div>}
+        : <div className="table-scroll"><table><thead><tr><SortableHeader label="Waktu" column="occurred_at" sortBy={sortBy} direction={sortOrder} onSort={changeSort} /><SortableHeader label="Aktivitas" column="event_type" sortBy={sortBy} direction={sortOrder} onSort={changeSort} /><SortableHeader label="Objek data" column="entity_type" sortBy={sortBy} direction={sortOrder} onSort={changeSort} /><SortableHeader label="Dilakukan oleh" column="actor" sortBy={sortBy} direction={sortOrder} onSort={changeSort} /><SortableHeader label="Instansi" column="organization" sortBy={sortBy} direction={sortOrder} onSort={changeSort} />{technical && <th>Detail teknis</th>}</tr></thead><tbody>{result.data.data.map((item) => <tr key={item.id}><td>{formatDate(item.occurred_at)}</td><td><div className="identity-cell"><span><strong>{auditEventLabel(item.event_type)}</strong>{technical && <small>{item.event_type}</small>}</span></div></td><td><Badge tone="neutral">{auditEntityLabel(item.entity_type)}</Badge></td><td>{item.actor_name ?? "Proses otomatis sistem"}</td><td>{item.organization_name ?? "Lintas instansi"}</td>{technical && <td><code title={item.request_id ?? undefined}>{item.request_id?.slice(0, 8) ?? "-"}</code><small>{item.id.slice(0, 8)}</small></td>}</tr>)}</tbody></table></div>}
       {result.data && <Pagination page={result.data.meta.page} pageSize={result.data.meta.page_size} totalItems={result.data.meta.total_items} totalPages={result.data.meta.total_pages} sortLabel={`${({ occurred_at: "Waktu", event_type: "Aktivitas", entity_type: "Entitas", actor: "Aktor", organization: "Organisasi" } as Record<string, string>)[sortBy] ?? "Waktu"} ${sortBy === "occurred_at" ? (sortOrder === "desc" ? "terbaru" : "terlama") : (sortOrder === "desc" ? "menurun" : "menaik")}`} onChange={setPage} showPageSize={false} />}
     </section>
   </>;
@@ -61,10 +61,10 @@ export function AuditPage() {
 const auditEventWords: Record<string, string> = {
   create: "Membuat", update: "Memperbarui", submit: "Mengirim", approve: "Menyetujui", reject: "Menolak",
   return: "Mengembalikan untuk diperbaiki", activate: "Mengaktifkan", deactivate: "Menonaktifkan", delete: "Menghapus",
-  import: "Mengimpor", publish: "Menerbitkan", withdraw: "Menarik publikasi", login: "Masuk", logout: "Keluar",
+  import: "Mengimpor", publish: "Menerbitkan", withdraw: "Menarik publikasi", login: "Masuk", logout: "Keluar", review: "Memeriksa", verify: "Memverifikasi", resolve: "Menetapkan", retire: "Mengarsipkan",
 };
 function auditEventLabel(value: string) {
-  const parts = value.toLowerCase().split(/[._-]+/u);
+  const parts = value.toLowerCase().replace(/start[._-]review/u, "review").split(/[._-]+/u);
   const action = [...parts].reverse().find((part) => auditEventWords[part]);
   const subject = parts.filter((part) => part !== action).map(auditEntityLabel).join(" ");
   return `${action ? auditEventWords[action] : "Aktivitas"}${subject ? ` ${subject}` : ""}`;

@@ -54,6 +54,7 @@ import { CommandPalette, type PaletteItem } from "./CommandPalette";
 const iconByCode: Record<string, typeof LayoutDashboard> = {
   organizations: Building2,
   users: Users,
+  "my-account": UserRound,
   roles: ShieldCheck,
   menus: PanelLeftOpen,
   "system-settings": SlidersHorizontal,
@@ -78,7 +79,7 @@ const iconByCode: Record<string, typeof LayoutDashboard> = {
   "opd-monitoring": Building2,
 };
 
-const supportedRoutes = new Set(["/admin", "/dashboard", "/executive", "/assistant", "/analysis", "/finance", "/public-services", "/notifications", "/audit", "/operations", "/opd-profile", "/admin/organizations", "/admin/opd-monitoring", "/admin/users", "/admin/roles", "/admin/menus", "/admin/system", "/admin/metadata-profiles", "/governance/focuses", "/governance/categories", "/governance/indicators", "/governance/datasets", "/submissions", "/reviews", "/guidance", "/publications", "/connectors", "/consolidation"]);
+const supportedRoutes = new Set(["/admin", "/admin/profile", "/dashboard", "/executive", "/assistant", "/analysis", "/finance", "/public-services", "/notifications", "/audit", "/operations", "/opd-profile", "/admin/organizations", "/admin/opd-monitoring", "/admin/users", "/admin/roles", "/admin/menus", "/admin/system", "/admin/metadata-profiles", "/governance/focuses", "/governance/categories", "/governance/indicators", "/governance/datasets", "/submissions", "/reviews", "/guidance", "/publications", "/connectors", "/consolidation"]);
 
 const roleLabels: Record<string, string> = {
   superadmin: "Pengelola Sistem",
@@ -132,6 +133,7 @@ export function AdminLayout({ pathname, title, subtitle, actions, children }: { 
   const guidanceEntries = useMemo(() => menu.filter((item) => item.code === "statistical-guidance" && item.route_name && supportedRoutes.has(item.route_name)), [menu]);
   const auditEntries = useMemo(() => menu.filter((item) => item.code === "audit" && item.route_name && supportedRoutes.has(item.route_name)), [menu]);
   const isPimpinan = user?.roles.some((role) => role.code === "pimpinan") ?? false;
+  const accountEntries = useMemo<MenuItem[]>(() => user && !user.simulation?.active ? [{ code: "my-account", label: adminEntries.some((item) => item.code === "users") ? "Akun saya" : "Pengguna", icon: "user", route_name: "/admin/profile", navigation_disabled: false, display_order: 9999, children: [] }] : [], [user, adminEntries]);
   const navigationSections = useMemo(() => [
     { code: "system", label: "Administrasi sistem", entries: systemEntries },
     { code: "primary", label: "Ruang pimpinan", entries: primaryEntries },
@@ -143,7 +145,8 @@ export function AdminLayout({ pathname, title, subtitle, actions, children }: { 
     { code: "guidance", label: "Pembinaan statistik", entries: guidanceEntries },
     { code: "audit", label: "Pengawasan", entries: auditEntries },
     { code: "administration", label: "Konfigurasi internal", entries: adminEntries },
-  ].filter((section) => section.entries.length > 0).sort((a, b) => Math.min(...a.entries.map((entry) => entry.display_order)) - Math.min(...b.entries.map((entry) => entry.display_order))), [adminEntries, analysisEntries, auditEntries, consolidationEntries, guidanceEntries, governanceEntries, isBapperida, isPimpinan, isSuperadmin, operationalEntries, primaryEntries, sourceEntries, systemEntries]);
+    { code: "account", label: "Akun", entries: accountEntries },
+  ].filter((section) => section.entries.length > 0).sort((a, b) => Math.min(...a.entries.map((entry) => entry.display_order)) - Math.min(...b.entries.map((entry) => entry.display_order))), [accountEntries, adminEntries, analysisEntries, auditEntries, consolidationEntries, guidanceEntries, governanceEntries, isBapperida, isPimpinan, isSuperadmin, operationalEntries, primaryEntries, sourceEntries, systemEntries]);
   const areaLabel = ["/admin", "/admin/opd-monitoring"].includes(pathname) ? "Administrasi Sistem"
     : pathname.startsWith("/admin") ? "Konfigurasi Internal"
     : ["/dashboard", "/executive", "/assistant"].includes(pathname) ? "Ruang Pimpinan"
@@ -379,7 +382,7 @@ export function AdminLayout({ pathname, title, subtitle, actions, children }: { 
             {profileOpen && <div className="profile-popover"><div className="profile-identity"><UserRound /><span><strong>{user?.simulation?.original_email ?? user?.email}</strong><small>{isRolePreview ? `Bertindak sebagai: ${roleLabels[user?.roles[0]?.code ?? ""] ?? "Peran"}` : user?.organizations[0]?.name ?? "Lingkup global"}</small></span></div>
               {isRolePreview ? <div className="profile-preview-return"><small>BERTINDAK SEBAGAI PERAN LAIN</small><button disabled={previewBusy} onClick={() => void leavePreview()}><RotateCcw />Kembali ke Developer</button></div>
                 : isSuperadmin && <div className="profile-preview"><small>BERTINDAK SEBAGAI PERAN</small><p>Gunakan menu dan kewenangan peran ini tanpa login ulang. Perubahan tercatat atas nama Developer.</p>{previewError && <span className="profile-preview-error">{previewError}</span>}<button disabled={previewBusy} onClick={() => void enterPreview("bapperida")}><Eye />BAPPERIDA</button><button disabled={previewBusy} onClick={() => void enterPreview("kominfo")}><Eye />Walidata Diskominfosantik</button><button disabled={previewBusy} onClick={() => void enterPreview("pembina_statistik")}><Eye />Pembina Statistik BPS</button><button disabled={previewBusy} onClick={() => void enterPreview("pimpinan")}><Eye />Pimpinan</button><label><span>Pratinjau OPD</span><select value={previewOrganizationId} onChange={(event) => setPreviewOrganizationId(event.target.value)}><option value="">Pilih OPD</option>{previewOrganizations.map((organization) => <option key={organization.id} value={organization.id}>{organization.short_name ? `${organization.short_name} - ` : ""}{organization.name}</option>)}</select></label><button disabled={previewBusy || !previewOrganizationId} onClick={() => void enterPreview("opd", previewOrganizationId)}><Eye />Masuk sebagai OPD terpilih</button></div>}
-              {!isRolePreview && <button onClick={() => go("/admin/profile")}><ShieldCheck />Keamanan akun</button>}<button className="danger-text" onClick={doLogout}><LogOut />Keluar</button></div>}
+              {!isRolePreview && <button onClick={() => go("/admin/profile")}><ShieldCheck />Akun saya</button>}<button className="danger-text" onClick={doLogout}><LogOut />Keluar</button></div>}
           </div>
         </div>
       </header>

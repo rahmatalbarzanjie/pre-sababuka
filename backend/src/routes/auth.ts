@@ -103,6 +103,16 @@ export async function authenticationRoutes(app: FastifyInstance): Promise<void> 
     return reply.code(204).send();
   });
 
+  app.patch<{ Body: { full_name: string } }>(
+    "/me",
+    { schema: { body: { type: "object", additionalProperties: false, required: ["full_name"], properties: { full_name: { type: "string", minLength: 3, maxLength: 255 } } } } },
+    async (request) => {
+      requireCsrf(request);
+      if (request.auth!.user.simulation?.active) throw new ApiError(403, "SCOPE_DENIED", "Profil tidak dapat diubah saat bertindak sebagai peran lain.");
+      return new AccountService(app.db, app.config).updateProfile(request.auth!, request.body.full_name, requestAuditContext(request));
+    },
+  );
+
   app.post<{ Body: { current_password: string; new_password: string } }>(
     "/me/password",
     {

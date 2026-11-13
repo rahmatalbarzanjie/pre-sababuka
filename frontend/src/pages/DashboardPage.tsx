@@ -30,7 +30,7 @@ export function DashboardPage() {
   return <>
     <section className={`system-health-banner ${data.health.status}`}>
       <span>{data.health.status === "healthy" ? <CircleCheck aria-hidden /> : <Activity aria-hidden />}</span>
-      <div><h2>{data.health.status === "healthy" ? "Sistem beroperasi normal" : "Sistem memerlukan perhatian"}</h2><p>Database merespons dalam {data.health.database_response_ms} ms. Pemeriksaan terakhir {formatDate(data.generated_at)}.</p></div>
+      <div><h2>{data.health.status === "healthy" ? "Sistem beroperasi normal" : "Sistem memerlukan perhatian"}</h2><p>{data.health.status === "healthy" ? `Database merespons dalam ${data.health.database_response_ms} ms.` : `${data.health.failed_integrations ? `${data.health.failed_integrations} sumber data eksternal berstatus gagal` : ""}${data.health.failed_integrations && data.health.failed_runs_30d ? " dan " : ""}${data.health.failed_runs_30d ? `${data.health.failed_runs_30d} proses sinkronisasi gagal dalam 30 hari terakhir` : ""}. Buka Pusat Sinkronisasi Data untuk memeriksa. Database tetap normal (${data.health.database_response_ms} ms).`} Pemeriksaan terakhir {formatDate(data.generated_at)}.</p></div>
       <Badge tone={data.health.status === "healthy" ? "success" : "warning"}>{data.health.status === "healthy" ? "Sehat" : "Perlu ditinjau"}</Badge>
     </section>
 

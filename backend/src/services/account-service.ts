@@ -53,6 +53,15 @@ export class AccountService {
     return { changed: true };
   }
 
+  async updateProfile(auth: AuthContext, fullName: string, audit: AuditContext) {
+    const name = fullName.trim().replace(/s+/gu, " ");
+    if (name.length < 3) throw new ApiError(400, "VALIDATION_ERROR", "Nama lengkap minimal 3 karakter.");
+    const before = await this.db.query<{ full_name: string }>(`SELECT full_name FROM sababuka.users WHERE id = $1`, [auth.user.id]);
+    await this.db.query(`UPDATE sababuka.users SET full_name = $2, updated_at = now() WHERE id = $1`, [auth.user.id, name]);
+    await recordAudit(this.db, { ...audit, actorId: auth.user.id, eventType: "user.profile_updated", entityType: "user", entityId: auth.user.id, beforeData: { full_name: before.rows[0]?.full_name }, afterData: { full_name: name } });
+    return { full_name: name };
+  }
+
   async registrationOrganizations() {
     const result = await this.db.query<QueryResultRow & Record<string, unknown>>(
       `SELECT id::text, code, name, short_name, organization_type
